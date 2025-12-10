@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Build Executable - Package Windows client as standalone .exe
+Build GUI Executable - Package Windows client GUI as standalone .exe
 
-This script uses PyInstaller to create a Windows executable from windows_client.py
+This script uses PyInstaller to create a Windows executable from windows_client_gui.py
 """
 
 import os
@@ -11,11 +11,11 @@ import subprocess
 import shutil
 
 
-def build_executable():
-    """Build the Windows executable using PyInstaller."""
+def build_gui_executable():
+    """Build the Windows GUI executable using PyInstaller."""
     
     print("=" * 60)
-    print("Building Windows Client Executable")
+    print("Building Windows Client GUI Executable")
     print("=" * 60)
     
     # Check if PyInstaller is installed
@@ -29,12 +29,12 @@ def build_executable():
         print("✓ PyInstaller installed")
     
     # Check if source file exists
-    if not os.path.exists('windows_client.py'):
-        print("\n✗ Error: windows_client.py not found!")
+    if not os.path.exists('windows_client_gui.py'):
+        print("\n✗ Error: windows_client_gui.py not found!")
         print("Make sure you're running this script from the project directory.")
         return False
     
-    print("\n✓ Source file found: windows_client.py")
+    print("\n✓ Source file found: windows_client_gui.py")
     
     # Clean previous builds
     print("\nCleaning previous builds...")
@@ -43,25 +43,24 @@ def build_executable():
             shutil.rmtree(directory)
             print(f"  Removed {directory}/")
     
-    # Remove old spec file
-    if os.path.exists('windows_client.spec'):
-        os.remove('windows_client.spec')
-        print("  Removed windows_client.spec")
+    # Remove old spec files
+    for spec_file in ['windows_client_gui.spec', 'windows_client.spec']:
+        if os.path.exists(spec_file):
+            os.remove(spec_file)
+            print(f"  Removed {spec_file}")
     
-    # PyInstaller command
-    print("\nBuilding executable with PyInstaller...")
+    # PyInstaller command for GUI version
+    print("\nBuilding GUI executable with PyInstaller...")
     print("This may take a few minutes...\n")
     
     cmd = [
         'pyinstaller',
-        '--onefile',           # Single executable file
-        '--noconsole',         # No console window (comment out for debugging)
-        '--name', 'windows_client',
-        'windows_client.py'
+        '--onefile',                    # Single executable file
+        '--windowed',                   # GUI mode (no console window)
+        '--name', 'windows_client_gui',
+        '--icon', 'NONE',              # You can add an icon file here
+        'windows_client_gui.py'
     ]
-    
-    # Note: For debugging, you might want to use --console instead of --noconsole
-    # This will show the console window with logs
     
     print(f"Command: {' '.join(cmd)}\n")
     
@@ -72,24 +71,40 @@ def build_executable():
         print("Build Successful!")
         print("=" * 60)
         
-        # Check if executable was created
-        exe_path = os.path.join('dist', 'windows_client.exe')
+        # Check if executable was created (platform-specific naming)
+        import platform
+        system = platform.system()
+        
+        if system == 'Windows':
+            exe_path = os.path.join('dist', 'windows_client_gui.exe')
+        else:
+            # On macOS/Linux
+            exe_path = os.path.join('dist', 'windows_client_gui')
+        
         if os.path.exists(exe_path):
             size_mb = os.path.getsize(exe_path) / (1024 * 1024)
-            print(f"\n✓ Executable created: {exe_path}")
+            print(f"\n✓ GUI Executable created: {exe_path}")
             print(f"✓ File size: {size_mb:.2f} MB")
             
-            print("\nNext steps:")
-            print("  1. Copy dist/windows_client.exe to your Windows PC")
-            print("  2. Run the executable on Windows")
-            print("  3. Use controller_service.py to send commands")
-            print("\nNote: Windows Defender might flag the executable.")
-            print("      This is normal for PyInstaller executables.")
-            print("      Add an exception if needed.")
+            if system == 'Windows':
+                print("\nNext steps:")
+                print("  1. Run dist/windows_client_gui.exe")
+                print("  2. Click 'Start Server' button")
+                print("  3. Use controller_service.py from another machine")
+            else:
+                print(f"\n⚠️  Note: You built on {system}, not Windows!")
+                print("   This executable will only work on macOS/Linux.")
+                print("\nTo create a Windows .exe:")
+                print("  1. Run this build script on a Windows machine")
+                print("\nFor testing on this Mac:")
+                print(f"  1. Run: {exe_path}")
+                print("  2. Click 'Start Server'")
+                print("  3. Use controller_service.py to send commands to localhost")
             
             return True
         else:
             print("\n✗ Error: Executable not found in dist/")
+            print(f"   Expected: {exe_path}")
             return False
             
     except subprocess.CalledProcessError as e:
@@ -101,39 +116,6 @@ def build_executable():
         return False
 
 
-def build_with_console():
-    """Build executable with console window for debugging."""
-    print("\nBuilding with console window for debugging...")
-    
-    cmd = [
-        'pyinstaller',
-        '--onefile',
-        '--console',  # Show console window
-        '--name', 'windows_client_debug',
-        'windows_client.py'
-    ]
-    
-    try:
-        subprocess.run(cmd, check=True)
-        print("\n✓ Debug executable created: dist/windows_client_debug.exe")
-        return True
-    except subprocess.CalledProcessError:
-        print("\n✗ Debug build failed!")
-        return False
-
-
 if __name__ == '__main__':
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Build Windows client executable')
-    parser.add_argument('--debug', action='store_true', 
-                       help='Build with console window for debugging')
-    
-    args = parser.parse_args()
-    
-    if args.debug:
-        success = build_with_console()
-    else:
-        success = build_executable()
-    
+    success = build_gui_executable()
     sys.exit(0 if success else 1)

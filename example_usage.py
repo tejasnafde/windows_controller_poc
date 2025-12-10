@@ -9,7 +9,7 @@ import time
 from controller_service import ControllerService
 
 # Configuration - Update this with your Windows PC's IP address
-WINDOWS_CLIENT_HOST = 'localhost'  # Change to Windows PC IP for remote control
+WINDOWS_CLIENT_HOST = '10.211.21.126'  # Change to Windows PC IP for remote control
 WINDOWS_CLIENT_PORT = 5555
 
 
