@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,7 +24,7 @@
             background: #f0f0f0;
             border: 2px solid #666;
             border-radius: 8px 8px 0 0;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
 
         .title-bar {
@@ -82,6 +83,7 @@
             background: linear-gradient(135deg, #b8b8e0 0%, #9090c8 100%);
             padding: 20px;
             min-height: 600px;
+            position: relative;
         }
 
         .header-section {
@@ -146,7 +148,7 @@
             border-radius: 50%;
             background: radial-gradient(circle, #6a9fb5, #4a7f95);
             border: 4px solid #333;
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         .power-display {
@@ -257,7 +259,7 @@
         .chart-item:hover {
             background: #e0e0ff;
             transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             border-color: #0066cc;
         }
 
@@ -328,8 +330,48 @@
             margin-top: 10px;
             border-radius: 4px;
         }
+
+        .last-clicked-box {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #fff;
+            border: 4px solid #ff6600;
+            border-radius: 8px;
+            padding: 15px 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            min-width: 200px;
+        }
+
+        .last-clicked-box h3 {
+            margin: 0 0 10px 0;
+            color: #ff6600;
+            font-size: 16px;
+            border-bottom: 2px solid #ff6600;
+            padding-bottom: 5px;
+        }
+
+        .last-clicked-box .clicked-item {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .last-clicked-box .timestamp {
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+            text-align: center;
+        }
     </style>
 </head>
+
 <body>
     <div class="window">
         <div class="title-bar">
@@ -359,6 +401,13 @@
         </div>
 
         <div class="main-content">
+            <!-- Last Clicked Indicator -->
+            <div class="last-clicked-box">
+                <h3>LAST CLICKED</h3>
+                <div class="clicked-item" id="lastClickedItem">None</div>
+                <div class="timestamp" id="lastClickedTime"></div>
+            </div>
+
             <div class="header-section">
                 <span>[F]Spherical Test / Far VA</span>
                 <span>R</span>
@@ -418,7 +467,9 @@
                     </div>
                     <div class="indicator-lights">
                         <div class="indicator red">(—)</div>
-                        <div style="width: 40px; height: 40px; background: #666; border-radius: 50%; border: 2px solid #333;"></div>
+                        <div
+                            style="width: 40px; height: 40px; background: #666; border-radius: 50%; border: 2px solid #333;">
+                        </div>
                         <div class="indicator green">(+)</div>
                     </div>
                     <div class="bar-display">
@@ -523,10 +574,32 @@
     </div>
 
     <script>
+        function updateLastClicked(itemName) {
+            const itemElement = document.getElementById('lastClickedItem');
+            const timeElement = document.getElementById('lastClickedTime');
+
+            itemElement.textContent = itemName;
+            itemElement.style.background = '#ffe0b0';
+
+            const now = new Date();
+            timeElement.textContent = now.toLocaleTimeString();
+
+            // Flash effect
+            setTimeout(() => {
+                itemElement.style.background = '#f0f0f0';
+            }, 500);
+        }
+
         // Add click feedback to all chart items
-        document.querySelectorAll('.chart-item').forEach(item => {
-            item.addEventListener('click', function() {
-                // Visual feedback only - no actual functionality
+        document.querySelectorAll('.chart-item').forEach((item, index) => {
+            item.addEventListener('click', function () {
+                // Determine chart name
+                const label = this.querySelector('.chart-label');
+                const chartName = label ? label.textContent.trim() : `Chart Item ${index + 1}`;
+
+                updateLastClicked(chartName);
+
+                // Visual feedback
                 this.style.background = this.classList.contains('special') ? '#ff8888' : '#b0b0ff';
                 setTimeout(() => {
                     this.style.background = '';
@@ -536,11 +609,28 @@
 
         // Add click feedback to chart tabs
         document.querySelectorAll('.chart-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
+            tab.addEventListener('click', function () {
+                updateLastClicked(this.textContent);
+
                 document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
             });
         });
+
+        // Add click feedback to toolbar buttons
+        document.querySelectorAll('.toolbar-btn').forEach((btn, index) => {
+            btn.addEventListener('click', function () {
+                updateLastClicked(`Toolbar Button ${index + 1}`);
+            });
+        });
+
+        // Add click feedback to side buttons
+        document.querySelectorAll('.side-btn').forEach((btn, index) => {
+            btn.addEventListener('click', function () {
+                updateLastClicked(`Side Button ${index + 1}`);
+            });
+        });
     </script>
 </body>
+
 </html>
