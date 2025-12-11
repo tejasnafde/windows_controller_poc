@@ -11,7 +11,6 @@ import logging
 from datetime import datetime
 from typing import Dict, Set
 import websockets
-from websockets.server import WebSocketServerProtocol
 
 # Configure logging
 logging.basicConfig(
@@ -25,8 +24,8 @@ DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 8123
 
 # Connected clients and controllers
-clients: Dict[str, WebSocketServerProtocol] = {}  # client_id -> websocket
-controllers: Set[WebSocketServerProtocol] = set()
+clients: Dict[str, any] = {}  # client_id -> websocket
+controllers: Set[any] = set()
 
 
 class RelayServer:
@@ -36,7 +35,7 @@ class RelayServer:
         self.host = host
         self.port = port
     
-    async def register_client(self, websocket: WebSocketServerProtocol, client_id: str):
+    async def register_client(self, websocket, client_id: str):
         """Register a Windows client."""
         clients[client_id] = websocket
         logger.info(f"Client registered: {client_id} from {websocket.remote_address}")
@@ -61,7 +60,7 @@ class RelayServer:
                 'timestamp': datetime.now().isoformat()
             })
     
-    async def register_controller(self, websocket: WebSocketServerProtocol):
+    async def register_controller(self, websocket):
         """Register a controller."""
         controllers.add(websocket)
         logger.info(f"Controller registered from {websocket.remote_address}")
@@ -73,7 +72,7 @@ class RelayServer:
             'timestamp': datetime.now().isoformat()
         }))
     
-    async def unregister_controller(self, websocket: WebSocketServerProtocol):
+    async def unregister_controller(self, websocket):
         """Unregister a controller."""
         controllers.discard(websocket)
         logger.info(f"Controller unregistered from {websocket.remote_address}")
@@ -87,7 +86,7 @@ class RelayServer:
                 return_exceptions=True
             )
     
-    async def handle_client_message(self, websocket: WebSocketServerProtocol, message: dict, client_id: str):
+    async def handle_client_message(self, websocket, message: dict, client_id: str):
         """Handle message from a Windows client (usually responses)."""
         # Client is sending a response to a command
         # Forward it to all controllers
@@ -96,7 +95,7 @@ class RelayServer:
         await self.broadcast_to_controllers(message)
         logger.info(f"Forwarded response from client {client_id}: {message.get('type', 'unknown')}")
     
-    async def handle_controller_message(self, websocket: WebSocketServerProtocol, message: dict):
+    async def handle_controller_message(self, websocket, message: dict):
         """Handle message from a controller (usually commands)."""
         target_client_id = message.get('client_id')
         
@@ -129,7 +128,7 @@ class RelayServer:
                 'timestamp': datetime.now().isoformat()
             }))
     
-    async def handler(self, websocket: WebSocketServerProtocol, path: str):
+    async def handler(self, websocket):
         """Main WebSocket connection handler."""
         connection_type = None
         client_id = None
