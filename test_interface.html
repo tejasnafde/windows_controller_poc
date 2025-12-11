@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Far Visual Acuity (Overview Screen)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #9999cc 0%, #6666aa 100%);
+            padding: 20px;
+        }
+
+        .window {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #f0f0f0;
+            border: 2px solid #666;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .title-bar {
+            background: linear-gradient(to bottom, #4a4a7a, #2a2a5a);
+            color: white;
+            padding: 8px 12px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 6px 6px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .window-controls button {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #999;
+            border-radius: 3px;
+            background: #ddd;
+            cursor: pointer;
+        }
+
+        .toolbar {
+            background: #e8e8e8;
+            padding: 8px;
+            border-bottom: 1px solid #999;
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-btn {
+            width: 32px;
+            height: 32px;
+            background: #fff;
+            border: 1px solid #999;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .toolbar-btn:hover {
+            background: #e0e0ff;
+        }
+
+        .main-content {
+            background: linear-gradient(135deg, #b8b8e0 0%, #9090c8 100%);
+            padding: 20px;
+            min-height: 600px;
+        }
+
+        .header-section {
+            background: #5a5a8a;
+            color: white;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .data-table {
+            background: white;
+            border: 2px solid #666;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: #5a5a8a;
+            color: white;
+            padding: 8px;
+            border: 1px solid #666;
+            font-weight: bold;
+        }
+
+        .data-table td {
+            padding: 12px;
+            border: 1px solid #999;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .instruction-box {
+            background: #fff9e6;
+            border: 2px solid #666;
+            padding: 12px;
+            margin: 20px 0;
+            max-width: 400px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .control-panel {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .dial {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #6a9fb5, #4a7f95);
+            border: 4px solid #333;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .power-display {
+            background: #2a2a2a;
+            color: #00ff00;
+            padding: 12px 24px;
+            border: 3px solid #666;
+            border-radius: 4px;
+            font-size: 28px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+        }
+
+        .right-panel {
+            background: linear-gradient(135deg, #d4d4a0, #b8b888);
+            border: 3px solid #666;
+            padding: 15px;
+            max-width: 250px;
+            border-radius: 4px;
+        }
+
+        .indicator-lights {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .indicator {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .indicator.red {
+            background: #cc4444;
+            color: white;
+        }
+
+        .indicator.green {
+            background: #44cc44;
+            color: white;
+        }
+
+        .charts-section {
+            margin-top: 20px;
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .chart-tab {
+            background: linear-gradient(to bottom, #6a9fb5, #4a7f95);
+            color: white;
+            padding: 8px 20px;
+            border: 2px solid #333;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .chart-tab:hover {
+            background: linear-gradient(to bottom, #7aafcc, #5a8fa5);
+            transform: translateY(-2px);
+        }
+
+        .chart-tab.active {
+            background: linear-gradient(to bottom, #8ac0dd, #6aa0bd);
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            background: #888;
+            padding: 10px;
+            border: 3px solid #333;
+            border-radius: 4px;
+        }
+
+        .chart-item {
+            background: white;
+            border: 2px solid #666;
+            padding: 15px 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .chart-item:hover {
+            background: #e0e0ff;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border-color: #0066cc;
+        }
+
+        .chart-item:active {
+            background: #c0c0ff;
+            transform: scale(0.98);
+        }
+
+        .chart-item.special {
+            background: #ff4444;
+            color: white;
+        }
+
+        .chart-item.special:hover {
+            background: #ff6666;
+        }
+
+        .chart-label {
+            font-size: 10px;
+            margin-top: 5px;
+            color: #666;
+        }
+
+        .side-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-left: 10px;
+        }
+
+        .side-btn {
+            width: 50px;
+            height: 50px;
+            background: #ddd;
+            border: 2px solid #666;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .side-btn:hover {
+            background: #e0e0ff;
+        }
+
+        .bar-display {
+            background: #000;
+            width: 100px;
+            height: 150px;
+            border: 3px solid #666;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 10px;
+            margin-top: 20px;
+        }
+
+        .bar {
+            width: 60px;
+            height: 80px;
+            background: #000;
+            border: 2px solid #fff;
+        }
+
+        .bottom-display {
+            background: #a8d4a8;
+            border: 3px solid #666;
+            padding: 10px;
+            text-align: center;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="window">
+        <div class="title-bar">
+            <span>Test – Far Visual Acuity (Overview Screen)</span>
+            <div class="window-controls">
+                <button>_</button>
+                <button>□</button>
+                <button>×</button>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <button class="toolbar-btn">📁</button>
+            <button class="toolbar-btn">💾</button>
+            <button class="toolbar-btn">🖨️</button>
+            <button class="toolbar-btn">📋</button>
+            <button class="toolbar-btn">✂️</button>
+            <button class="toolbar-btn">📄</button>
+            <button class="toolbar-btn">🔍</button>
+            <button class="toolbar-btn">↩️</button>
+            <button class="toolbar-btn">↪️</button>
+            <button class="toolbar-btn">⚙️</button>
+            <button class="toolbar-btn">❓</button>
+            <button class="toolbar-btn">🖨️</button>
+            <button class="toolbar-btn">✏️</button>
+            <button class="toolbar-btn">🔧</button>
+        </div>
+
+        <div class="main-content">
+            <div class="header-section">
+                <span>[F]Spherical Test / Far VA</span>
+                <span>R</span>
+                <span>Sbj Data:Far</span>
+                <span>L</span>
+                <span>11/25/2026<br>02:46 PM</span>
+            </div>
+
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div>
+                    <div class="data-table">
+                        <table>
+                            <tr>
+                                <td>0.00</td>
+                                <th>S</th>
+                                <td>0.00</td>
+                            </tr>
+                            <tr>
+                                <td>-0.00</td>
+                                <th>C</th>
+                                <td>-0.00</td>
+                            </tr>
+                            <tr>
+                                <td>180</td>
+                                <th>A (5)</th>
+                                <td>180</td>
+                            </tr>
+                            <tr>
+                                <td>0.00</td>
+                                <th>ADD</th>
+                                <td>0.00</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="instruction-box">
+                        Adjust the spherical power till the best visual acuity is obtained with the maximum plus power.
+                    </div>
+
+                    <div class="control-panel">
+                        <div class="dial"></div>
+                        <div class="power-display">
+                            PD<br>64.0
+                        </div>
+                        <div class="dial"></div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <div style="background: #fff; padding: 8px; border: 2px solid #666; display: inline-block;">
+                            <strong>R</strong> &nbsp; <strong>BINO</strong> &nbsp; <strong>L</strong>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin: 10px 0;">
+                        <span style="font-size: 12px;">(+) SPH (-)</span>
+                    </div>
+                    <div class="indicator-lights">
+                        <div class="indicator red">(—)</div>
+                        <div style="width: 40px; height: 40px; background: #666; border-radius: 50%; border: 2px solid #333;"></div>
+                        <div class="indicator green">(+)</div>
+                    </div>
+                    <div class="bar-display">
+                        <div class="bar"></div>
+                    </div>
+                    <div class="bottom-display">
+                        <strong>600</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-section">
+                <div class="chart-tabs">
+                    <div class="chart-tab active">Chart1</div>
+                    <div class="chart-tab">Chart2</div>
+                    <div class="chart-tab">Chart3</div>
+                    <div class="chart-tab">Chart4</div>
+                    <div class="chart-tab">Chart5</div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div class="chart-grid">
+                        <div class="chart-item">
+                            <div style="font-size: 32px;">E</div>
+                            <div class="chart-label">E 200</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 28px;">E</div>
+                            <div class="chart-label">E 100</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 24px;">E</div>
+                            <div class="chart-label">E 70</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 20px;">E</div>
+                            <div class="chart-label">E 50</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 16px;">E</div>
+                            <div class="chart-label">E N 100<br>D L C 50</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 14px;">E</div>
+                            <div class="chart-label">H B V 30<br>P H T 40</div>
+                        </div>
+
+                        <div class="chart-item">
+                            <div style="font-size: 18px;">E 40</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 16px;">VLNEA 25<br>EDHCO 30</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 14px;">FZBDE 20<br>NPLDT 25<br>AHLCT 30</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 12px;">TZVECD 15<br>DHPAN 20<br>EVDTR 25</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 18px;">FHRZP 15<br>NHFZC 20</div>
+                        </div>
+                        <div class="chart-item special">
+                            <div style="font-size: 20px;">R<br>G</div>
+                        </div>
+
+                        <div class="chart-item">
+                            <div style="font-size: 16px;">ZBHCT 15</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 14px;">⊕⊕⊕<br>⊕⊕⊕</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 14px;">⊕⊕⊕<br>⊕⊕⊕</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 16px;">⊙⊙⊙<br>⊙⊙⊙</div>
+                        </div>
+                        <div class="chart-item">
+                            <div style="font-size: 14px;">RG<br>VLDRF</div>
+                        </div>
+                        <div class="chart-item" style="background: #000;">
+                        </div>
+                    </div>
+
+                    <div class="side-controls">
+                        <button class="side-btn" style="background: #000; border: 3px solid #666;">
+                            <div style="width: 20px; height: 20px; background: #fff; margin: auto;"></div>
+                        </button>
+                        <button class="side-btn" style="background: linear-gradient(to bottom, #4a4, #2a2);">
+                        </button>
+                        <button class="side-btn" style="background: linear-gradient(to bottom, #a44, #822);">
+                        </button>
+                        <button class="side-btn" style="background: #ddd;">
+                        </button>
+                        <button class="side-btn" style="background: #ddd;">
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add click feedback to all chart items
+        document.querySelectorAll('.chart-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Visual feedback only - no actual functionality
+                this.style.background = this.classList.contains('special') ? '#ff8888' : '#b0b0ff';
+                setTimeout(() => {
+                    this.style.background = '';
+                }, 200);
+            });
+        });
+
+        // Add click feedback to chart tabs
+        document.querySelectorAll('.chart-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

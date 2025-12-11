@@ -18,7 +18,7 @@ from controller_websocket import ControllerWebSocket
 async def main():
     """Simple screenshot and click test."""
     
-    SERVER_URL = 'wss://878adfc94192c6.lhr.life'
+    SERVER_URL = 'wss://d315fa0e928740.lhr.life'
     
     print("=" * 60)
     print("Screenshot & Click Test")
