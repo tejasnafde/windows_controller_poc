@@ -47,8 +47,13 @@ class ControllerWebSocket:
         response = await self.websocket.recv()
         response_data = json.loads(response)
         
-        if response_data.get('type') == 'registered':
+        if response_data.get('type') in ['registered', 'client_list']:
             logger.info("Registered as controller")
+            
+            # If we got client_list, populate it immediately
+            if response_data.get('type') == 'client_list':
+                self.connected_clients = response_data.get('clients', [])
+                logger.info(f"Initial client list: {self.connected_clients}")
             
             # Start listening for messages in background
             asyncio.create_task(self._listen_for_messages())
@@ -183,6 +188,14 @@ class ControllerWebSocket:
             'action': 'get_position'
         }
         return await self.send_command(client_id, command)
+    
+    async def take_screenshot(self, client_id: str) -> Dict[str, Any]:
+        """Take screenshot from target client."""
+        command = {
+            'action': 'take_screenshot'
+        }
+        return await self.send_command(client_id, command)
+
 
 
 async def main():

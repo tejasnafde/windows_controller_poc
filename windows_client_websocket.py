@@ -317,6 +317,8 @@ class WindowsClientWebSocket:
                 return self._move_relative(command)
             elif action == 'get_position':
                 return self._get_position()
+            elif action == 'take_screenshot':
+                return self._take_screenshot()
             else:
                 return {
                     'type': 'response',
@@ -395,6 +397,41 @@ class WindowsClientWebSocket:
                 'screen_height': screen_size.height
             }
         }
+    
+    def _take_screenshot(self) -> Dict[str, Any]:
+        """Take a screenshot of the screen."""
+        import base64
+        import io
+        
+        try:
+            # Take screenshot
+            screenshot = pyautogui.screenshot()
+            
+            # Convert to PNG bytes
+            img_buffer = io.BytesIO()
+            screenshot.save(img_buffer, format='PNG')
+            img_bytes = img_buffer.getvalue()
+            
+            # Encode to base64
+            img_base64 = base64.b64encode(img_bytes).decode('utf-8')
+            
+            return {
+                'type': 'response',
+                'status': 'success',
+                'message': 'Screenshot captured',
+                'data': {
+                    'screenshot': img_base64,
+                    'width': screenshot.width,
+                    'height': screenshot.height
+                }
+            }
+        except Exception as e:
+            return {
+                'type': 'response',
+                'status': 'error',
+                'message': f'Failed to take screenshot: {str(e)}'
+            }
+
     
     def on_closing(self):
         """Handle window close event."""

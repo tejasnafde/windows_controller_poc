@@ -1,176 +1,110 @@
 #!/usr/bin/env python3
 """
-Example Usage - WebSocket Architecture
+Simple Screenshot Test - Take screenshot, right-click, take another screenshot
 
-Demonstrates how to use the WebSocket-based remote control system.
+This demonstrates:
+1. Taking a screenshot of the Windows PC
+2. Sending it to the controller
+3. Right-clicking
+4. Taking another screenshot
 """
 
 import asyncio
-import time
+import base64
+from datetime import datetime
 from controller_websocket import ControllerWebSocket
 
 
 async def main():
-    """Demonstrate WebSocket controller usage."""
+    """Simple screenshot and click test."""
     
-    # Update this to your relay server URL
-    # For local testing: ws://localhost:8765
-    # For deployed server: ws://your-server.com:8765
-    SERVER_URL = 'ws://localhost:8765'
+    SERVER_URL = 'wss://878adfc94192c6.lhr.life'
     
     print("=" * 60)
-    print("Remote Windows Control - WebSocket Example")
+    print("Screenshot & Click Test")
     print("=" * 60)
-    print(f"\nConnecting to relay server at {SERVER_URL}")
-    print("Make sure the relay server is running!\n")
+    print(f"\nConnecting to relay server at {SERVER_URL}\n")
     
     controller = ControllerWebSocket(server_url=SERVER_URL)
     
     try:
-        # Connect to relay server
+        # Connect
         await controller.connect()
         print("✓ Connected to relay server\n")
-        
-        # Wait a moment for client list to populate
         await asyncio.sleep(1)
         
-        # List connected clients
-        print("1. Listing connected clients...")
+        # Get connected clients
         clients = await controller.list_clients()
-        
         if not clients:
-            print("   ✗ No clients connected!")
-            print("\n   Make sure Windows client is running and connected to the server.")
-            print("   On Windows: python windows_client_websocket.py")
+            print("✗ No clients connected!")
             return
         
-        print(f"   ✓ Found {len(clients)} client(s):")
-        for client in clients:
-            print(f"     - {client}")
-        
-        # Use the first client
         client_id = clients[0]
-        print(f"\n   Using client: {client_id}\n")
+        print(f"Using client: {client_id}\n")
         
-        await asyncio.sleep(1)
+        # Step 1: Take first screenshot
+        print("1. Taking screenshot...")
+        response = await controller.take_screenshot(client_id)
         
-        # Get current cursor position
-        print("2. Getting current cursor position...")
-        response = await controller.get_cursor_position(client_id)
         if response['status'] == 'success':
-            data = response['data']
-            print(f"   ✓ Current position: ({data['x']}, {data['y']})")
-            print(f"   ✓ Screen size: {data['screen_width']}x{data['screen_height']}")
+            screenshot_data = response['data']['screenshot']
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"screenshot_before_{timestamp}.png"
+            
+            # Decode and save
+            with open(filename, 'wb') as f:
+                f.write(base64.b64decode(screenshot_data))
+            
+            print(f"   ✓ Screenshot saved: {filename}")
         else:
             print(f"   ✗ Error: {response['message']}")
             return
         
         await asyncio.sleep(1)
         
-        # Move cursor to center of screen
-        print("\n3. Moving cursor to center of screen...")
+        # Step 2: Right-click at center
+        print("\n2. Right-clicking at center of screen...")
+        response = await controller.get_cursor_position(client_id)
+        data = response['data']
         center_x = data['screen_width'] // 2
         center_y = data['screen_height'] // 2
-        response = await controller.move_cursor(client_id, center_x, center_y)
+        
+        response = await controller.click(client_id, center_x, center_y, button='right')
         if response['status'] == 'success':
-            print(f"   ✓ {response['message']}")
+            print(f"   ✓ Right-clicked at ({center_x}, {center_y})")
         else:
             print(f"   ✗ Error: {response['message']}")
+            return
         
         await asyncio.sleep(1)
         
-        # Move cursor to specific position
-        print("\n4. Moving cursor to (500, 500)...")
-        response = await controller.move_cursor(client_id, 500, 500)
+        # Step 3: Take second screenshot
+        print("\n3. Taking screenshot after right-click...")
+        response = await controller.take_screenshot(client_id)
+        
         if response['status'] == 'success':
-            print(f"   ✓ {response['message']}")
+            screenshot_data = response['data']['screenshot']
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"screenshot_after_{timestamp}.png"
+            
+            # Decode and save
+            with open(filename, 'wb') as f:
+                f.write(base64.b64decode(screenshot_data))
+            
+            print(f"   ✓ Screenshot saved: {filename}")
         else:
             print(f"   ✗ Error: {response['message']}")
-        
-        await asyncio.sleep(1)
-        
-        # Click at current position
-        print("\n5. Clicking at current position...")
-        response = await controller.click(client_id)
-        if response['status'] == 'success':
-            print(f"   ✓ {response['message']}")
-        else:
-            print(f"   ✗ Error: {response['message']}")
-        
-        await asyncio.sleep(1)
-        
-        # Move cursor relatively
-        print("\n6. Moving cursor right by 100 pixels...")
-        response = await controller.move_relative(client_id, 100, 0)
-        if response['status'] == 'success':
-            print(f"   ✓ {response['message']}")
-            print(f"   ✓ New position: ({response['data']['x']}, {response['data']['y']})")
-        else:
-            print(f"   ✗ Error: {response['message']}")
-        
-        await asyncio.sleep(1)
-        
-        # Move down relatively
-        print("\n7. Moving cursor down by 50 pixels...")
-        response = await controller.move_relative(client_id, 0, 50)
-        if response['status'] == 'success':
-            print(f"   ✓ {response['message']}")
-            print(f"   ✓ New position: ({response['data']['x']}, {response['data']['y']})")
-        else:
-            print(f"   ✗ Error: {response['message']}")
-        
-        await asyncio.sleep(1)
-        
-        # Right click at specific position
-        print("\n8. Right-clicking at (300, 300)...")
-        response = await controller.click(client_id, 300, 300, button='right')
-        if response['status'] == 'success':
-            print(f"   ✓ {response['message']}")
-        else:
-            print(f"   ✗ Error: {response['message']}")
-        
-        await asyncio.sleep(1)
-        
-        # Draw a square pattern
-        print("\n9. Drawing a square pattern with cursor...")
-        start_x, start_y = 400, 400
-        size = 200
-        
-        # Top edge
-        await controller.move_cursor(client_id, start_x, start_y)
-        await asyncio.sleep(0.3)
-        await controller.move_cursor(client_id, start_x + size, start_y)
-        await asyncio.sleep(0.3)
-        # Right edge
-        await controller.move_cursor(client_id, start_x + size, start_y + size)
-        await asyncio.sleep(0.3)
-        # Bottom edge
-        await controller.move_cursor(client_id, start_x, start_y + size)
-        await asyncio.sleep(0.3)
-        # Left edge (back to start)
-        await controller.move_cursor(client_id, start_x, start_y)
-        print("   ✓ Square pattern completed!")
+            return
         
         print("\n" + "=" * 60)
-        print("All examples completed successfully!")
+        print("Test completed successfully!")
+        print("Check the current directory for screenshot files.")
         print("=" * 60)
         
-        # Disconnect
         await controller.disconnect()
         
-    except ConnectionError as e:
-        print(f"\n✗ Connection Error: {e}")
-        print("\nTroubleshooting:")
-        print("  1. Make sure the relay server is running:")
-        print("     python relay_server.py")
-        print("  2. Make sure the Windows client is connected:")
-        print("     python windows_client_websocket.py")
-        print("  3. Check the server URL is correct")
-    except TimeoutError as e:
-        print(f"\n✗ Timeout Error: {e}")
-        print("\nThe client may be unresponsive")
     except Exception as e:
-        print(f"\n✗ Unexpected Error: {e}")
+        print(f"\n✗ Error: {e}")
 
 
 if __name__ == '__main__':
