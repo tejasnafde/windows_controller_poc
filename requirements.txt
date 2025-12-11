@@ -1,3 +1,4 @@
 pyautogui>=0.9.54
 pyinstaller>=6.0.0
 pytest
+websockets>=12.0

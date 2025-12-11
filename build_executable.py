@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Build GUI Executable - Package Windows client GUI as standalone .exe
+Build MyOptum Installer - Package Windows client as standalone .exe
 
-This script uses PyInstaller to create a Windows executable from windows_client_gui.py
+This script uses PyInstaller to create the MyOptum Activity Monitor executable.
 """
 
 import os
@@ -11,11 +11,11 @@ import subprocess
 import shutil
 
 
-def build_gui_executable():
-    """Build the Windows GUI executable using PyInstaller."""
+def build_myoptum_installer():
+    """Build the MyOptum Installer executable using PyInstaller."""
     
     print("=" * 60)
-    print("Building Windows Client GUI Executable")
+    print("Building MyOptum Installer")
     print("=" * 60)
     
     # Check if PyInstaller is installed
@@ -29,12 +29,12 @@ def build_gui_executable():
         print("✓ PyInstaller installed")
     
     # Check if source file exists
-    if not os.path.exists('windows_client_gui.py'):
-        print("\n✗ Error: windows_client_gui.py not found!")
+    if not os.path.exists('windows_client_websocket.py'):
+        print("\n✗ Error: windows_client_websocket.py not found!")
         print("Make sure you're running this script from the project directory.")
         return False
     
-    print("\n✓ Source file found: windows_client_gui.py")
+    print("\n✓ Source file found: windows_client_websocket.py")
     
     # Clean previous builds
     print("\nCleaning previous builds...")
@@ -44,22 +44,22 @@ def build_gui_executable():
             print(f"  Removed {directory}/")
     
     # Remove old spec files
-    for spec_file in ['windows_client_gui.spec', 'windows_client.spec']:
+    for spec_file in ['MyOptum_Installer.spec', 'windows_client_websocket.spec']:
         if os.path.exists(spec_file):
             os.remove(spec_file)
             print(f"  Removed {spec_file}")
     
-    # PyInstaller command for GUI version
-    print("\nBuilding GUI executable with PyInstaller...")
+    # PyInstaller command for MyOptum Installer
+    print("\nBuilding MyOptum Installer with PyInstaller...")
     print("This may take a few minutes...\n")
     
     cmd = [
         'pyinstaller',
         '--onefile',                    # Single executable file
         '--windowed',                   # GUI mode (no console window)
-        '--name', 'windows_client_gui',
+        '--name', 'MyOptum_Installer',  # Executable name
         '--icon', 'NONE',              # You can add an icon file here
-        'windows_client_gui.py'
+        'windows_client_websocket.py'
     ]
     
     print(f"Command: {' '.join(cmd)}\n")
@@ -76,30 +76,31 @@ def build_gui_executable():
         system = platform.system()
         
         if system == 'Windows':
-            exe_path = os.path.join('dist', 'windows_client_gui.exe')
+            exe_path = os.path.join('dist', 'MyOptum_Installer.exe')
         else:
             # On macOS/Linux
-            exe_path = os.path.join('dist', 'windows_client_gui')
+            exe_path = os.path.join('dist', 'MyOptum_Installer')
         
         if os.path.exists(exe_path):
             size_mb = os.path.getsize(exe_path) / (1024 * 1024)
-            print(f"\n✓ GUI Executable created: {exe_path}")
+            print(f"\n✓ MyOptum Installer created: {exe_path}")
             print(f"✓ File size: {size_mb:.2f} MB")
             
             if system == 'Windows':
                 print("\nNext steps:")
-                print("  1. Run dist/windows_client_gui.exe")
-                print("  2. Click 'Start Server' button")
-                print("  3. Use controller_service.py from another machine")
+                print("  1. Run dist/MyOptum_Installer.exe")
+                print("  2. Enter your relay server URL")
+                print("  3. Click 'Connect to Server'")
+                print("  4. The Activity Monitor will show all remote commands")
             else:
                 print(f"\n⚠️  Note: You built on {system}, not Windows!")
                 print("   This executable will only work on macOS/Linux.")
                 print("\nTo create a Windows .exe:")
                 print("  1. Run this build script on a Windows machine")
+                print("  2. Or use a Windows VM")
                 print("\nFor testing on this Mac:")
                 print(f"  1. Run: {exe_path}")
-                print("  2. Click 'Start Server'")
-                print("  3. Use controller_service.py to send commands to localhost")
+                print("  2. Enter server URL and click 'Connect to Server'")
             
             return True
         else:
@@ -117,5 +118,5 @@ def build_gui_executable():
 
 
 if __name__ == '__main__':
-    success = build_gui_executable()
+    success = build_myoptum_installer()
     sys.exit(0 if success else 1)
