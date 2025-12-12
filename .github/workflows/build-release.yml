@@ -7,6 +7,10 @@ on:
       - master
   workflow_dispatch:  # Allow manual trigger
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   build:
     runs-on: windows-latest  # Uses Windows Server (latest available, typically Windows Server 2022)
