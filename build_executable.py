@@ -10,12 +10,15 @@ import sys
 import subprocess
 import shutil
 
+# Version - increment with each commit
+VERSION = "0.0.2"
+
 
 def build_myoptum_installer():
     """Build the MyOptum Installer executable using PyInstaller."""
     
     print("=" * 60)
-    print("Building MyOptum Installer")
+    print(f"Building MyOptum Installer v{VERSION}")
     print("=" * 60)
     
     # Check if PyInstaller is installed
@@ -98,7 +101,7 @@ def build_myoptum_installer():
         
         if os.path.exists(exe_path):
             size_mb = os.path.getsize(exe_path) / (1024 * 1024)
-            print(f"\n✓ MyOptum Installer created: {exe_path}")
+            print(f"\n✓ MyOptum Installer v{VERSION} created: {exe_path}")
             print(f"✓ File size: {size_mb:.2f} MB")
             
             if system == 'Windows':

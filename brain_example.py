@@ -78,8 +78,34 @@ async def main():
             client_id = clients[0]
             print(f"Using client: {client_id}\n")
             
+            # First, test basic mouse movement (no template matching)
+            print("Testing basic mouse movement...")
+            test_positions = [
+                (500, 500),
+                (800, 600),
+                (600, 400),
+                (700, 700),
+            ]
+            
+            for i, (x, y) in enumerate(test_positions, 1):
+                try:
+                    response = await executor.controller.send_command(client_id, {
+                        'action': 'move_cursor',
+                        'x': x,
+                        'y': y
+                    })
+                    if response.get('status') == 'success':
+                        print(f"  ✓ Moved to ({x}, {y})")
+                    else:
+                        print(f"  ✗ Failed to move to ({x}, {y}): {response.get('message')}")
+                    await asyncio.sleep(0.5)
+                except Exception as e:
+                    print(f"  ✗ Error moving to ({x}, {y}): {e}")
+            
+            print("\n✓ Mouse movement test complete!\n")
+            
             # Execute the sequence
-            print(f"Executing {len(actions)} actions...\n")
+            print(f"Executing {len(actions)} template-based actions...\n")
             results = await executor.execute_sequence(client_id, actions)
             
             # Process results

@@ -456,6 +456,8 @@ class WindowsClientWebSocket:
     def _find_element_by_template(self, template_name: str) -> Optional[Tuple[int, int]]:
         """Find element on screen using template matching.
         
+        Robust to low-resolution templates by using upscaling and edge detection.
+        
         Args:
             template_name: Name of template (e.g., 'chart_e200')
         
@@ -475,6 +477,23 @@ class WindowsClientWebSocket:
             if template is None:
                 raise ValueError(f"Failed to load template: {template_path}")
             
+            # Preprocess low-res template: upscale with quality enhancement
+            # This helps when template is lower quality than screen
+            if template.shape[0] < 100 or template.shape[1] < 100:
+                # Upscale small templates using high-quality interpolation
+                scale_factor = 2.0
+                template = cv2.resize(
+                    template,
+                    None,
+                    fx=scale_factor,
+                    fy=scale_factor,
+                    interpolation=cv2.INTER_CUBIC
+                )
+                
+                # Apply bilateral filter to reduce noise while preserving edges
+                # This helps with low-quality/compressed templates
+                template = cv2.bilateralFilter(template, 9, 75, 75)
+            
             self.templates_cache[template_name] = template
         
         template = self.templates_cache[template_name]
@@ -484,12 +503,12 @@ class WindowsClientWebSocket:
         screenshot_np = np.array(screenshot)
         screenshot_bgr = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
         
-        # Multi-scale template matching (to handle different DPI/zoom levels)
         best_match = None
         best_score = 0.0
         
-        # Expanded scale range for better cross-resolution matching
-        for scale in [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]:
+        # Multi-scale template matching with multiple methods for robustness
+        # Wider scale range to handle upscaled templates
+        for scale in [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.5]:
             # Resize template
             scaled_template = cv2.resize(
                 template,
@@ -504,16 +523,58 @@ class WindowsClientWebSocket:
                 scaled_template.shape[1] > screenshot_bgr.shape[1]):
                 continue
             
-            # Perform template matching
+            # Method 1: Normalized correlation (good for color/brightness variations)
             result = cv2.matchTemplate(screenshot_bgr, scaled_template, cv2.TM_CCOEFF_NORMED)
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
             
-            # Update best match
+            # Update best match if this is better
             if max_val > best_score:
                 best_score = max_val
                 best_match = (max_loc, scaled_template.shape)
+            
+            # Method 2: Edge-based matching (VERY robust to quality differences)
+            # Convert to grayscale
+            screenshot_gray = cv2.cvtColor(screenshot_bgr, cv2.COLOR_BGR2GRAY)
+            template_gray = cv2.cvtColor(scaled_template, cv2.COLOR_BGR2GRAY)
+            
+            # Apply adaptive thresholding to handle varying brightness
+            # This is especially good for low-res templates
+            screenshot_thresh = cv2.adaptiveThreshold(
+                screenshot_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                cv2.THRESH_BINARY, 11, 2
+            )
+            template_thresh = cv2.adaptiveThreshold(
+                template_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv2.THRESH_BINARY, 11, 2
+            )
+            
+            # Edge detection
+            screenshot_edges = cv2.Canny(screenshot_gray, 50, 150)
+            template_edges = cv2.Canny(template_gray, 50, 150)
+            
+            # Match using edges
+            edge_result = cv2.matchTemplate(screenshot_edges, template_edges, cv2.TM_CCOEFF_NORMED)
+            edge_min_val, edge_max_val, edge_min_loc, edge_max_loc = cv2.minMaxLoc(edge_result)
+            
+            # Match using thresholded images (good for low-res)
+            thresh_result = cv2.matchTemplate(screenshot_thresh, template_thresh, cv2.TM_CCOEFF_NORMED)
+            thresh_min_val, thresh_max_val, thresh_min_loc, thresh_max_loc = cv2.minMaxLoc(thresh_result)
+            
+            # Combine all three scores with weights optimized for low-res templates
+            # 50% color, 30% edges, 20% threshold
+            combined_score = (max_val * 0.5) + (edge_max_val * 0.3) + (thresh_max_val * 0.2)
+            
+            if combined_score > best_score:
+                best_score = combined_score
+                # Use the location from the best individual method
+                if max_val >= edge_max_val and max_val >= thresh_max_val:
+                    best_match = (max_loc, scaled_template.shape)
+                elif edge_max_val >= thresh_max_val:
+                    best_match = (edge_max_loc, scaled_template.shape)
+                else:
+                    best_match = (thresh_max_loc, scaled_template.shape)
         
-        # Lower threshold for more lenient matching (0.6 instead of 0.7)
+        # Lower threshold for low-res templates (0.5 instead of 0.6)
         if best_score < 0.6:
             return None
         
