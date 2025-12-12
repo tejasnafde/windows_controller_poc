@@ -17,7 +17,7 @@ from instruction_schema import Action
 
 
 # Configuration
-SERVER_URL = 'wss://b3f75a94c4435f.lhr.life'  # Update with your server URL
+SERVER_URL = 'wss://29cb14c9edd5.ngrok-free.app'  # Update with your server URL
 
 
 async def save_screenshot(screenshot_b64: str, filename: str):

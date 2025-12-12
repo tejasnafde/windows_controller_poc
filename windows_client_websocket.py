@@ -27,7 +27,7 @@ except ImportError:
     OPENCV_AVAILABLE = False
 
 # Configuration
-DEFAULT_SERVER_URL = 'ws://localhost:8765'
+DEFAULT_SERVER_URL = 'wss://29cb14c9edd5.ngrok-free.app'
 DEFAULT_CLIENT_ID = socket.gethostname()  # Use computer name as default ID
 
 # PyAutoGUI safety settings
@@ -307,10 +307,16 @@ class WindowsClientWebSocket:
         response = self._execute_command(message)
         
         # Send response back to server
-        asyncio.run_coroutine_threadsafe(
-            self.websocket.send(json.dumps(response)),
-            self.loop
-        )
+        try:
+            future = asyncio.run_coroutine_threadsafe(
+                self.websocket.send(json.dumps(response)),
+                self.loop
+            )
+            # Wait for send to complete (with timeout)
+            future.result(timeout=5.0)
+        except Exception as e:
+            self.log(f"Failed to send response: {e}", "ERROR")
+            return
         
         if response['status'] == 'success':
             self.log(f"✓ {response['message']}", "SUCCESS")

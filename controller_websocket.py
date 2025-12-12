@@ -36,10 +36,10 @@ class ControllerWebSocket:
         """Connect to relay server."""
         logger.info(f"Connecting to relay server at {self.server_url}")
         
-        # Disable SSL verification for localhost.run tunnels
+        # Disable SSL verification for tunnel services (localhost.run, ngrok, etc.)
         import ssl
         ssl_context = None
-        if 'localhost.run' in self.server_url or 'lhr.life' in self.server_url:
+        if any(domain in self.server_url for domain in ['localhost.run', 'lhr.life', 'ngrok']):
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
