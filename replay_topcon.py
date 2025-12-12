@@ -62,7 +62,7 @@ def main():
 
         for row_num, row in enumerate(reader, start=1):
             if not row: continue # Skip empty rows
-
+            time.sleep(1)
             # 1. Filter Check - Only process IRP_MJ_WRITE operations going DOWN
             if FUNCTION_COLUMN_INDEX is not None:
                 if len(row) > FUNCTION_COLUMN_INDEX:
@@ -95,7 +95,7 @@ def main():
                         print(f"    ⬅️  Device Ack: {response.hex().upper()}")
                     
                     # Crucial: Small delay so we don't choke the hardware
-                    time.sleep(0.1) 
+                    time.sleep(0.2) 
                 else:
                     print(f"⚠️  [Row {row_num}] Could not parse hex: {raw_data}")
             else:

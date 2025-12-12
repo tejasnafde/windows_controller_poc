@@ -51,18 +51,24 @@ class Action:
     element: str  # Template name (e.g., "chart_e200")
     screenshot: ScreenshotConfig = field(default_factory=lambda: ScreenshotConfig())
     delay: float = 1.0  # Delay after action (seconds)
+    index: int = 0  # Which match to click if multiple found (0-based, 0 = first/leftmost/topmost)
+    button: str = 'left'  # Mouse button: 'left', 'right', or 'middle'
     
-    def __init__(self, element: str, screenshot: Union[bool, dict, ScreenshotConfig, None] = None, delay: float = 1.0):
+    def __init__(self, element: str, screenshot: Union[bool, dict, ScreenshotConfig, None] = None, delay: float = 1.0, index: int = 0, button: str = 'left'):
         self.element = element
         self.screenshot = screenshot if isinstance(screenshot, ScreenshotConfig) else ScreenshotConfig.from_value(screenshot)
         self.delay = delay
+        self.index = index
+        self.button = button
     
     def to_command(self) -> Dict[str, Any]:
         """Convert to command dictionary for sending to client."""
         return {
             'action': 'click_element',
             'element': self.element,
-            'screenshot': self.screenshot.to_dict()
+            'screenshot': self.screenshot.to_dict(),
+            'index': self.index,
+            'button': self.button
         }
 
 
