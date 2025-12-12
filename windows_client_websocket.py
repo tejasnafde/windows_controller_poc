@@ -488,7 +488,8 @@ class WindowsClientWebSocket:
         best_match = None
         best_score = 0.0
         
-        for scale in [0.8, 0.9, 1.0, 1.1, 1.2]:
+        # Expanded scale range for better cross-resolution matching
+        for scale in [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]:
             # Resize template
             scaled_template = cv2.resize(
                 template,
@@ -512,8 +513,8 @@ class WindowsClientWebSocket:
                 best_score = max_val
                 best_match = (max_loc, scaled_template.shape)
         
-        # Threshold for match confidence
-        if best_score < 0.7:
+        # Lower threshold for more lenient matching (0.6 instead of 0.7)
+        if best_score < 0.6:
             return None
         
         # Calculate center coordinates
