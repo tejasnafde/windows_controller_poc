@@ -17,7 +17,7 @@ from instruction_schema import Action
 
 
 # Configuration
-SERVER_URL = 'wss://fa3e96cb8df3b5.lhr.life'  # Update with your server URL
+SERVER_URL = 'wss://b3f75a94c4435f.lhr.life'  # Update with your server URL
 
 
 async def save_screenshot(screenshot_b64: str, filename: str):
@@ -30,36 +30,33 @@ async def save_screenshot(screenshot_b64: str, filename: str):
 
 
 async def main():
-    """Main brain logic - click all charts in row 1."""
+    """Main brain logic - click all Chart1 templates."""
     
     print("=" * 70)
-    print("Brain Example: Click All Charts in Row 1")
+    print("Brain Example: Click All Chart1 Templates")
     print("=" * 70)
     print(f"\nServer: {SERVER_URL}\n")
     
-    # Define the sequence of actions
+    # Define the sequence of actions using available templates
     # Each action specifies:
-    # - element: template name
+    # - element: template name (must match filename in templates/ folder)
     # - screenshot: when to capture screenshots
     # - delay: how long to wait after this action
     actions = [
-        # Chart 1: Full screenshots (before + after)
-        Action("chart_e200", screenshot={"before": True, "after": True}, delay=1.0),
-        
-        # Chart 2: Only before screenshot (faster)
-        Action("chart_e100", screenshot={"before": True, "after": False}, delay=0.5),
-        
-        # Chart 3: Only after screenshot
-        Action("chart_e70", screenshot={"before": False, "after": True}, delay=0.5),
-        
-        # Chart 4: No screenshots (fastest)
-        Action("chart_e50", screenshot=False, delay=0.3),
-        
-        # Chart 5: Shorthand for both screenshots
-        Action("chart_en100", screenshot=True, delay=1.0),
-        
-        # Chart 6: No screenshots
-        Action("chart_hbv30", screenshot=False, delay=0.3),
+        # Row 1 - Chart 1 templates (with full screenshots for first few)
+        Action("chart1_e200", screenshot=True, delay=1.0),
+        Action("chart1_e400", screenshot=True, delay=1.0),
+        Action("chart1_enh200", screenshot={"before": True, "after": False}, delay=0.5),
+        Action("chart1_eweme20", screenshot={"before": True, "after": False}, delay=0.5),
+        Action("chart1_hbv100", screenshot={"before": False, "after": True}, delay=0.5),
+        Action("chart1_m800", screenshot=False, delay=0.3),
+        Action("chart1_mew100", screenshot=False, delay=0.3),
+        Action("chart1_tzvec20", screenshot=False, delay=0.3),
+        Action("chart1_vlnea70", screenshot=False, delay=0.3),
+        Action("chart1_w150", screenshot=False, delay=0.3),
+        Action("chart1_w400", screenshot=False, delay=0.3),
+        Action("chart1_wemew40", screenshot=False, delay=0.3),
+        Action("chart1_wemew70", screenshot=True, delay=1.0),  # Last one with screenshot
     ]
     
     try:
