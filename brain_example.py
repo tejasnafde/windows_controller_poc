@@ -42,8 +42,9 @@ async def main():
     # - element: template name (must match filename in templates/ folder)
     # - screenshot: when to capture screenshots
     # - delay: how long to wait after this action
+    # - index: which match to click if template appears multiple times (0-based, optional)
     actions = [
-        # Row 1 - Chart 1 templates (with full screenshots for first few)
+        # Row 1 - Chart 1 templates
         Action("chart1_e200", screenshot=False, delay=1.0),
         Action("chart1_e400", screenshot=False, delay=1.0),
         Action("chart1_enh200", screenshot=False, delay=0.5),
@@ -57,6 +58,37 @@ async def main():
         Action("chart1_w400", screenshot=False, delay=0.3),
         Action("chart1_wemew40", screenshot=False, delay=0.3),
         Action("chart1_wemew70", screenshot=False, delay=1.0),
+        
+        # Navigation arrows - demonstrates using index for multiple matches
+        # If navigate_chart_arrows has left/right arrows, use index to select which one
+        # Action("navigate_chart_arrows", screenshot=False, delay=0.5, index=0),  # Click first (left) arrow
+        # Action("navigate_chart_arrows", screenshot=False, delay=0.5, index=1),  # Click second (right) arrow
+        
+        # Chart selection - top 5 buttons (vertical layout)
+        # Action("chart_top_5", screenshot=False, delay=0.5, index=0),  # Click topmost chart
+        # Action("chart_top_5", screenshot=False, delay=0.5, index=2),  # Click middle chart
+        # Action("chart_top_5", screenshot=False, delay=0.5, index=4),  # Click bottom chart
+        
+        # Chart selection - right 3 buttons (horizontal layout)
+        # Action("chart_right_3", screenshot=False, delay=0.5, index=0),  # Click leftmost
+        # Action("chart_right_3", screenshot=False, delay=0.5, index=1),  # Click middle
+        # Action("chart_right_3", screenshot=False, delay=0.5, index=2),  # Click rightmost
+        
+        # Occlusion controls - left/right
+        # Action("occlusion_l_r", screenshot=False, delay=0.5, index=0),  # Click left occlusion
+        # Action("occlusion_l_r", screenshot=False, delay=0.5, index=1),  # Click right occlusion
+        
+        # PD value setter
+        # Action("set_pd_value", screenshot=False, delay=0.5),
+        
+        # Tab navigation
+        # Action("tab_chart2", screenshot=False, delay=0.5),
+        
+        # Right-click examples (useful for context menus)
+        # Action("chart1_e200", screenshot=False, delay=0.5, button='right'),  # Right-click on chart
+        
+        # Middle-click examples (if needed)
+        # Action("some_element", screenshot=False, delay=0.5, button='middle'),
     ]
     
     try:

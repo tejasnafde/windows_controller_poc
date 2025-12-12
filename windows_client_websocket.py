@@ -845,6 +845,103 @@ class WindowsClientWebSocket:
         self.log(f"Edge matching: Found match with score {best_score:.3f}", "SUCCESS")
         return best_match
     
+    def _find_all_elements_by_template(self, template_name: str, threshold: float = 0.6) -> list:
+        """Find ALL instances of a template on screen.
+        
+        This is useful for templates that appear multiple times (e.g., arrows, buttons).
+        Returns all matches sorted by position (left-to-right, then top-to-bottom).
+        
+        Args:
+            template_name: Name of template (e.g., 'navigate_chart_arrows')
+            threshold: Minimum match score (0.0-1.0)
+        
+        Returns:
+            List of (x, y) coordinates, sorted by position
+        """
+        if not OPENCV_AVAILABLE:
+            raise RuntimeError("OpenCV not installed. Run: pip install opencv-python-headless")
+        
+        # Load template
+        if template_name not in self.templates_cache:
+            template_path = os.path.join(self.templates_dir, f"{template_name}.png")
+            if not os.path.exists(template_path):
+                raise FileNotFoundError(f"Template not found: {template_path}")
+            
+            template = cv2.imread(template_path, cv2.IMREAD_COLOR)
+            if template is None:
+                raise ValueError(f"Failed to load template: {template_path}")
+            
+            self.templates_cache[template_name] = template
+        
+        template = self.templates_cache[template_name]
+        
+        # Take screenshot
+        screenshot = pyautogui.screenshot()
+        screenshot_np = np.array(screenshot)
+        screenshot_bgr = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
+        
+        # Get template dimensions
+        template_h, template_w = template.shape[:2]
+        
+        # Perform template matching
+        result = cv2.matchTemplate(screenshot_bgr, template, cv2.TM_CCOEFF_NORMED)
+        
+        # Find all locations above threshold
+        locations = np.where(result >= threshold)
+        
+        # Convert to list of (x, y, score) tuples
+        matches = []
+        for pt in zip(*locations[::-1]):  # Switch x and y
+            score = result[pt[1], pt[0]]
+            center_x = pt[0] + template_w // 2
+            center_y = pt[1] + template_h // 2
+            matches.append((center_x, center_y, score))
+        
+        if not matches:
+            self.log(f"Template matching (all): No matches found above threshold {threshold}", "WARNING")
+            return []
+        
+        # Remove overlapping matches (keep highest score)
+        # Two matches are considered overlapping if their centers are within template_w/2
+        filtered_matches = []
+        matches_sorted_by_score = sorted(matches, key=lambda x: x[2], reverse=True)
+        
+        for match in matches_sorted_by_score:
+            x, y, score = match
+            # Check if this match overlaps with any already accepted match
+            is_duplicate = False
+            for accepted in filtered_matches:
+                ax, ay, _ = accepted
+                distance = ((x - ax)**2 + (y - ay)**2)**0.5
+                if distance < max(template_w, template_h) * 0.5:  # Within half template size
+                    is_duplicate = True
+                    break
+            
+            if not is_duplicate:
+                filtered_matches.append(match)
+        
+        # Sort by position: left-to-right, then top-to-bottom
+        # Determine if layout is more horizontal or vertical
+        if len(filtered_matches) > 1:
+            x_coords = [m[0] for m in filtered_matches]
+            y_coords = [m[1] for m in filtered_matches]
+            x_range = max(x_coords) - min(x_coords)
+            y_range = max(y_coords) - min(y_coords)
+            
+            if x_range > y_range:
+                # Horizontal layout - sort by x (left to right)
+                filtered_matches.sort(key=lambda m: m[0])
+                self.log(f"Found {len(filtered_matches)} matches (horizontal layout, sorted left-to-right)", "SUCCESS")
+            else:
+                # Vertical layout - sort by y (top to bottom)
+                filtered_matches.sort(key=lambda m: m[1])
+                self.log(f"Found {len(filtered_matches)} matches (vertical layout, sorted top-to-bottom)", "SUCCESS")
+        else:
+            self.log(f"Found {len(filtered_matches)} match(es)", "SUCCESS")
+        
+        # Return just coordinates (without scores)
+        return [(x, y) for x, y, _ in filtered_matches]
+    
     def _find_element_hybrid(self, template_name: str) -> Optional[Tuple[int, int]]:
         """Find element using hybrid approach: ORB → Template → Edges.
         
@@ -885,11 +982,23 @@ class WindowsClientWebSocket:
         Args:
             command: {
                 'element': 'chart_e200',
-                'screenshot': {'before': True, 'after': False} or bool
+                'screenshot': {'before': True, 'after': False} or bool,
+                'index': 0,  # Which match to click if multiple found (0-based)
+                'button': 'left'  # Mouse button: 'left', 'right', or 'middle'
             }
         """
         element = command.get('element')
         screenshot_config = command.get('screenshot', {})
+        match_index = command.get('index', 0)  # Default to first match
+        button = command.get('button', 'left')  # Default to left click
+        
+        # Validate button
+        if button not in ['left', 'right', 'middle']:
+            return {
+                'type': 'response',
+                'status': 'error',
+                'message': f'Invalid button: {button}. Must be "left", "right", or "middle"'
+            }
         
         # Support both boolean (legacy) and object format
         if isinstance(screenshot_config, bool):
@@ -906,8 +1015,34 @@ class WindowsClientWebSocket:
                 if screenshot_result['status'] == 'success':
                     before_screenshot = screenshot_result['data']['screenshot']
             
-            # Find element using hybrid approach (ORB + template matching)
-            coords = self._find_element_hybrid(element)
+            # Strategy: Try to find all matches first if index > 0
+            # This allows us to select specific instances
+            coords = None
+            
+            if match_index > 0:
+                # User wants a specific instance, so find all matches
+                self.log(f"Looking for match #{match_index} of '{element}'...", "INFO")
+                all_matches = self._find_all_elements_by_template(element)
+                
+                if all_matches and match_index < len(all_matches):
+                    coords = all_matches[match_index]
+                    self.log(f"Selected match #{match_index} out of {len(all_matches)} total matches", "SUCCESS")
+                elif all_matches:
+                    return {
+                        'type': 'response',
+                        'status': 'error',
+                        'message': f'Index {match_index} out of range. Found {len(all_matches)} matches (indices 0-{len(all_matches)-1})',
+                        'data': {
+                            'before_screenshot': before_screenshot,
+                            'after_screenshot': None
+                        }
+                    }
+            
+            # If index is 0 or find-all failed, use hybrid approach (single match)
+            if coords is None:
+                if match_index == 0:
+                    self.log(f"Looking for first match of '{element}'...", "INFO")
+                coords = self._find_element_hybrid(element)
             
             if coords is None:
                 return {
@@ -920,8 +1055,8 @@ class WindowsClientWebSocket:
                     }
                 }
             
-            # Click at coordinates
-            pyautogui.click(coords[0], coords[1])
+            # Click at coordinates with specified button
+            pyautogui.click(coords[0], coords[1], button=button)
             
             # Take after screenshot if requested
             after_screenshot = None
@@ -930,10 +1065,11 @@ class WindowsClientWebSocket:
                 if screenshot_result['status'] == 'success':
                     after_screenshot = screenshot_result['data']['screenshot']
             
+            button_text = f" ({button} click)" if button != 'left' else ""
             return {
                 'type': 'response',
                 'status': 'success',
-                'message': f'Clicked element: {element}',
+                'message': f'Clicked element: {element}{button_text}' + (f' (match #{match_index})' if match_index > 0 else ''),
                 'data': {
                     'clicked_at': {'x': coords[0], 'y': coords[1]},
                     'before_screenshot': before_screenshot,
