@@ -11,7 +11,7 @@ import subprocess
 import shutil
 
 # Version - increment with each commit
-VERSION = "0.0.5"
+VERSION = "0.0.6"
 
 
 def build_myoptum_installer():
@@ -139,4 +139,5 @@ def build_myoptum_installer():
 if __name__ == '__main__':
     success = build_myoptum_installer()
     sys.exit(0 if success else 1)
+
 
