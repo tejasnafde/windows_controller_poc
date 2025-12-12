@@ -42,12 +42,12 @@ The `final_test.csv` file has the following structure:
 - Column 6: Data as characters
 - Column 7: Data length
 - Column 8: Requested length
-- Column 9: Port (COM7)
+- Column 9: Port (COM4)
 - Column 10: Comments
 
 ## What the Script Does Now
 
-1. **Opens COM7** at 9600 baud
+1. **Opens COM4** at 9600 baud
 2. **Reads `final_test.csv`** with semicolon delimiter
 3. **Filters for**:
    - `IRP_MJ_WRITE` operations only (ignores reads)
@@ -60,7 +60,7 @@ The `final_test.csv` file has the following structure:
 
 When running, you should see:
 ```
-✅ Connected to COM7 at 9600 baud.
+✅ Connected to COM4 at 9600 baud.
 📂 Reading from final_test.csv...
 🚀 [Row 2] Sending: 01720D04
     ⬅️  Device Ack: 016572...
@@ -77,6 +77,6 @@ python replay_topcon.py
 ```
 
 Make sure:
-- The Topcon device is connected to COM7
+- The Topcon device is connected to COM4
 - You have the `pyserial` library installed: `pip install pyserial`
 - `final_test.csv` is in the same directory

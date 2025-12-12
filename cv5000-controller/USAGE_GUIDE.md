@@ -25,7 +25,7 @@ pip install -r requirements.txt
 ### 2. Configure Serial Port
 
 Update the port in examples or code:
-- **Windows**: `COM7`, `COM3`, etc.
+- **Windows**: `COM4`, `COM3`, etc.
 - **Linux**: `/dev/ttyUSB0`, `/dev/ttyS0`
 - **macOS**: `/dev/tty.usbserial-*`
 
@@ -39,7 +39,7 @@ Update the port in examples or code:
 from src.device import CV5000Device
 
 # Connect
-with CV5000Device(port="COM7") as device:
+with CV5000Device(port="COM4") as device:
     # Set prescription
     device.set_prescription(r_sph=-1.50, l_sph=-1.50)
     print("✅ Prescription set!")
@@ -52,7 +52,7 @@ from src.device import CV5000Device
 from src.exceptions import CV5000Error
 
 try:
-    device = CV5000Device(port="COM7", debug=True)
+    device = CV5000Device(port="COM4", debug=True)
     device.connect()
     
     # Your commands here
@@ -76,7 +76,7 @@ except Exception as e:
 from src.device import CV5000Device
 
 # Create device instance
-device = CV5000Device(port="COM7", debug=False)
+device = CV5000Device(port="COM4", debug=False)
 
 # Connect
 device.connect()
@@ -185,7 +185,7 @@ device.reset_to_zero()
 Enable debug mode to see all serial communication:
 
 ```python
-device = CV5000Device(port="COM7", debug=True)
+device = CV5000Device(port="COM4", debug=True)
 device.connect()
 
 # You'll see output like:
@@ -199,7 +199,7 @@ device.connect()
 from src.protocol import CV5000Protocol
 
 # Direct protocol control
-protocol = CV5000Protocol(port="COM7")
+protocol = CV5000Protocol(port="COM4")
 protocol.connect()
 
 # Build and send custom packet
@@ -253,7 +253,7 @@ device.set_prescription(r_sph=-1.50)  # Other values unchanged
 from src.device import CV5000Device
 import time
 
-with CV5000Device(port="COM7") as device:
+with CV5000Device(port="COM4") as device:
     # Reset
     device.reset_to_zero()
     time.sleep(0.5)
@@ -275,7 +275,7 @@ with CV5000Device(port="COM7") as device:
 from src.device import CV5000Device
 import time
 
-with CV5000Device(port="COM7") as device:
+with CV5000Device(port="COM4") as device:
     # Initial sphere
     device.set_prescription(r_sph=-1.50, l_sph=-1.50)
     time.sleep(0.5)
@@ -301,7 +301,7 @@ with CV5000Device(port="COM7") as device:
 ```python
 from src.device import CV5000Device
 
-with CV5000Device(port="COM7") as device:
+with CV5000Device(port="COM4") as device:
     # Set initial prescription
     device.set_prescription(
         r_sph=-1.50, r_cyl=-0.25, r_axis=90,
@@ -326,7 +326,7 @@ See `examples/full_exam.py` for a complete workflow.
 
 ## Troubleshooting
 
-### Issue: "Failed to connect to COM7"
+### Issue: "Failed to connect to COM4"
 
 **Solutions:**
 1. Check port name is correct
@@ -337,7 +337,7 @@ See `examples/full_exam.py` for a complete workflow.
 
 ```python
 # Test all COM ports
-for port in ['COM1', 'COM3', 'COM7']:
+for port in ['COM1', 'COM3', 'COM4']:
     try:
         device = CV5000Device(port=port)
         device.connect()
@@ -374,7 +374,7 @@ device.set_prescription(r_sph=-1.33)   # Invalid step
 
 ```python
 # Test basic communication
-device = CV5000Device(port="COM7", debug=True)
+device = CV5000Device(port="COM4", debug=True)
 device.connect()
 
 # Try version query

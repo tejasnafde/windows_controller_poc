@@ -9,7 +9,7 @@ from .exceptions import CV5000Error
 class CV5000Device:
     """High-level controller for CV-5000 phoropter"""
     
-    def __init__(self, port: str = "COM7", debug: bool = False):
+    def __init__(self, port: str = "COM4", debug: bool = False):
         """
         Initialize device controller
         

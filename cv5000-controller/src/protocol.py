@@ -14,12 +14,12 @@ class CV5000Protocol:
     CR = b'\x0d'   # Carriage Return (delimiter)
     EOT = b'\x04'  # End of Transmission
     
-    def __init__(self, port: str = "COM7", baudrate: int = 9600, timeout: float = 1.0):
+    def __init__(self, port: str = "COM4", baudrate: int = 9600, timeout: float = 1.0):
         """
         Initialize serial connection
         
         Args:
-            port: Serial port (e.g., COM7, /dev/ttyUSB0)
+            port: Serial port (e.g., COM4, /dev/ttyUSB0)
             baudrate: Communication speed (default 9600)
             timeout: Read timeout in seconds
         """

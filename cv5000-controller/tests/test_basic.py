@@ -15,7 +15,7 @@ def test_connection():
     print("=" * 60)
     
     try:
-        device = CV5000Device(port="COM7", debug=False)
+        device = CV5000Device(port="COM4", debug=False)
         device.connect()
         print("✅ Connection successful")
         
@@ -41,7 +41,7 @@ def test_version_query():
     print("=" * 60)
     
     try:
-        with CV5000Device(port="COM7", debug=True) as device:
+        with CV5000Device(port="COM4", debug=True) as device:
             versions = device.get_version()
             print(f"\n📟 Device Versions:")
             print(f"  Software: {versions.get('software', 'N/A')}")
@@ -63,7 +63,7 @@ def test_reset():
     print("=" * 60)
     
     try:
-        with CV5000Device(port="COM7", debug=False) as device:
+        with CV5000Device(port="COM4", debug=False) as device:
             device.reset_to_zero()
             print("✅ Reset command sent")
             

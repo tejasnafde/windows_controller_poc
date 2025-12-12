@@ -23,7 +23,7 @@ def print_menu():
     print("=" * 50)
 
 def main():
-    device = CV5000Device(port="COM7", debug=False)
+    device = CV5000Device(port="COM4", debug=False)
     
     try:
         device.connect()
