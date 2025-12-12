@@ -44,11 +44,11 @@ async def main():
     # - delay: how long to wait after this action
     actions = [
         # Row 1 - Chart 1 templates (with full screenshots for first few)
-        Action("chart1_e200", screenshot=True, delay=1.0),
-        Action("chart1_e400", screenshot=True, delay=1.0),
-        Action("chart1_enh200", screenshot={"before": True, "after": False}, delay=0.5),
-        Action("chart1_eweme20", screenshot={"before": True, "after": False}, delay=0.5),
-        Action("chart1_hbv100", screenshot={"before": False, "after": True}, delay=0.5),
+        Action("chart1_e200", screenshot=False, delay=1.0),
+        Action("chart1_e400", screenshot=False, delay=1.0),
+        Action("chart1_enh200", screenshot=False, delay=0.5),
+        Action("chart1_eweme20", screenshot=False, delay=0.5),
+        Action("chart1_hbv100", screenshot=False, delay=0.5),
         Action("chart1_m800", screenshot=False, delay=0.3),
         Action("chart1_mew100", screenshot=False, delay=0.3),
         Action("chart1_tzvec20", screenshot=False, delay=0.3),
@@ -56,7 +56,7 @@ async def main():
         Action("chart1_w150", screenshot=False, delay=0.3),
         Action("chart1_w400", screenshot=False, delay=0.3),
         Action("chart1_wemew40", screenshot=False, delay=0.3),
-        Action("chart1_wemew70", screenshot=True, delay=1.0),  # Last one with screenshot
+        Action("chart1_wemew70", screenshot=False, delay=1.0),
     ]
     
     try:

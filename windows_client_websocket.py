@@ -312,8 +312,8 @@ class WindowsClientWebSocket:
                 self.websocket.send(json.dumps(response)),
                 self.loop
             )
-            # Wait for send to complete (with timeout)
-            future.result(timeout=5.0)
+            # Wait for send to complete (with timeout matching brain's 10s timeout)
+            future.result(timeout=10.0)
         except Exception as e:
             self.log(f"Failed to send response: {e}", "ERROR")
             return
