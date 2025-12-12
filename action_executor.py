@@ -84,12 +84,27 @@ class ActionExecutor:
         results = []
         
         for action in actions:
-            result = await self.click_element(
-                client_id, 
-                action.element, 
-                action.screenshot.to_dict()
-            )
-            results.append(result)
+            try:
+                result = await self.click_element(
+                    client_id, 
+                    action.element, 
+                    action.screenshot.to_dict()
+                )
+                results.append(result)
+            except (TimeoutError, Exception) as e:
+                # Create a failed ActionResult for this action
+                error_result = ActionResult(
+                    success=False,
+                    action=action,  # Pass the Action object, not just element string
+                    clicked_at=None,
+                    before_screenshot=None,
+                    after_screenshot=None,
+                    error=str(e),
+                    execution_time=0.0
+                )
+                results.append(error_result)
+                print(f"⚠️  Action failed for {action.element}: {e}")
+                print(f"   Continuing with next action...")
             
             # Wait before next action
             if action.delay > 0:

@@ -212,6 +212,16 @@ async def main():
         Action("chart1_wemew40", screenshot=False, delay=0.3),
         Action("chart1_wemew70", screenshot=False, delay=1.0),
         
+        # Left/Right eye templates
+        Action("right_add", screenshot=True, delay=1.0),
+        Action("right_axial", screenshot=True, delay=1.0),
+        Action("right_spherical", screenshot=True, delay=1.0),
+        Action("right_cylindrical", screenshot=True, delay=1.0),
+        Action("left_add", screenshot=True, delay=1.0),
+        Action("left_axial", screenshot=True, delay=1.0),
+        Action("left_spherical", screenshot=True, delay=1.0),
+        Action("left_cylindrical", screenshot=True, delay=1.0),
+        
         # Navigation arrows - demonstrates using index for multiple matches
         # If navigate_chart_arrows has left/right arrows, use index to select which one
         # Action("navigate_chart_arrows", screenshot=False, delay=0.5, index=0),  # Click first (left) arrow
@@ -236,16 +246,6 @@ async def main():
         
         # Tab navigation
         # Action("tab_chart2", screenshot=False, delay=0.5),
-        
-        # Left/Right eye templates (tested separately in test_left_right_templates)
-        # Action("right_add", screenshot=True, delay=1.0),
-        # Action("right_axial", screenshot=True, delay=1.0),
-        # Action("right_spherical", screenshot=True, delay=1.0),
-        # Action("right_cylindrical", screenshot=True, delay=1.0),
-        # Action("left_add", screenshot=True, delay=1.0),
-        # Action("left_axial", screenshot=True, delay=1.0),
-        # Action("left_spherical", screenshot=True, delay=1.0),
-        # Action("left_cylindrical", screenshot=True, delay=1.0),
         
         # Right-click examples (useful for context menus)
         # Action("chart1_e200", screenshot=False, delay=0.5, button='right'),  # Right-click on chart
@@ -299,12 +299,6 @@ async def main():
             
             print("\n✓ Mouse movement test complete!\n")
             
-            # Test left/right eye templates
-            print("=" * 70)
-            print("Running Left/Right Eye Templates Test")
-            print("=" * 70 + "\n")
-            left_right_results = await test_left_right_templates(executor, client_id)
-            
             # Execute the sequence
             print(f"Executing {len(actions)} template-based actions...\n")
             results = await executor.execute_sequence(client_id, actions)
@@ -339,13 +333,10 @@ async def main():
             successful = sum(1 for r in results if r.success)
             total_time = sum(r.execution_time for r in results)
             
-            left_right_successful = sum(1 for v in left_right_results if v['success'])
-            
             print("=" * 70)
             print("FINAL SUMMARY")
             print("=" * 70)
-            print(f"Left/Right Templates Test: {left_right_successful}/{len(left_right_results)} successful")
-            print(f"Chart1 Templates Test: {successful}/{len(results)} actions successful")
+            print(f"Total actions: {successful}/{len(results)} successful")
             print(f"Total execution time: {total_time:.2f}s")
             print("=" * 70)
             
