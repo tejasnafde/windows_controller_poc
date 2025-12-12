@@ -30,7 +30,7 @@ pip install -r requirements.txt
 from src.device import CV5000Device
 
 # Connect and control
-with CV5000Device(port="COM7") as device:
+with CV5000Device(port="COM4") as device:
     # Set prescription
     device.set_prescription(r_sph=-1.50, l_sph=-1.50)
     
@@ -47,7 +47,7 @@ with CV5000Device(port="COM7") as device:
 from src.device import CV5000Device
 import time
 
-device = CV5000Device(port="COM7", debug=True)
+device = CV5000Device(port="COM4", debug=True)
 device.connect()
 
 # Initialize
@@ -113,7 +113,7 @@ The CV-5000 uses an ASCII-based serial protocol:
 ### CV5000Device
 
 ```python
-device = CV5000Device(port="COM7", debug=False)
+device = CV5000Device(port="COM4", debug=False)
 ```
 
 #### Connection
@@ -198,7 +198,7 @@ See `build-the-hand/data/final_test.csv` for captured protocol data.
 ### Connection Issues
 ```python
 # Check if port is correct
-device = CV5000Device(port="COM7", debug=True)
+device = CV5000Device(port="COM4", debug=True)
 device.connect()  # Will show detailed error
 ```
 

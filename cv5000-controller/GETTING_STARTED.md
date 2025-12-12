@@ -17,8 +17,8 @@ pip install -r requirements.txt
 ```
 
 ### 3. Update COM port (if needed)
-Edit the examples and change `"COM7"` to your actual port:
-- Windows: `COM1`, `COM3`, `COM7`, etc.
+Edit the examples and change `"COM4"` to your actual port:
+- Windows: `COM1`, `COM3`, `COM4`, etc.
 - Linux: `/dev/ttyUSB0`, `/dev/ttyS0`
 - macOS: `/dev/tty.usbserial-*`
 
@@ -55,7 +55,7 @@ Create `my_test.py`:
 from src.device import CV5000Device
 
 # Connect to device
-with CV5000Device(port="COM7", debug=True) as device:
+with CV5000Device(port="COM4", debug=True) as device:
     
     # Set a simple prescription
     device.set_prescription(
@@ -78,7 +78,7 @@ python my_test.py
 ```python
 from src.device import CV5000Device
 
-with CV5000Device(port="COM7") as device:
+with CV5000Device(port="COM4") as device:
     device.set_prescription(
         r_sph=-1.50, r_cyl=-0.25, r_axis=175,
         l_sph=-1.75, l_cyl=-0.50, l_axis=5
@@ -92,7 +92,7 @@ with CV5000Device(port="COM7") as device:
 from src.device import CV5000Device
 import time
 
-with CV5000Device(port="COM7") as device:
+with CV5000Device(port="COM4") as device:
     # Test different sphere values
     for sph in [-0.25, -0.50, -1.00, -1.50]:
         device.set_sphere_both(sph)
@@ -117,7 +117,7 @@ from src.device import CV5000Device
 def execute_scenario(scenario_id, target_state, **kwargs):
     """Execute Track 2 scenario using direct protocol control"""
     
-    with CV5000Device(port="COM7") as device:
+    with CV5000Device(port="COM4") as device:
         # Set complete prescription in one command
         device.set_prescription(
             r_sph=target_state.get('R_SPH', 0.0),
@@ -161,7 +161,7 @@ def execute_scenario(scenario_id, target_state, **kwargs):
 Enable debug to see the actual protocol:
 
 ```python
-device = CV5000Device(port="COM7", debug=True)
+device = CV5000Device(port="COM4", debug=True)
 device.connect()
 device.set_sphere_both(-1.50)
 
@@ -187,7 +187,7 @@ sudo usermod -a -G dialout $USER
 ### Commands not working
 ```python
 # Test basic communication
-device = CV5000Device(port="COM7", debug=True)
+device = CV5000Device(port="COM4", debug=True)
 device.connect()
 versions = device.get_version()
 print(versions)  # Should show version info

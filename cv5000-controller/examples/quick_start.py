@@ -12,7 +12,7 @@ def main():
     print("=" * 50)
     
     # Connect to device
-    device = CV5000Device(port="COM7", debug=True)
+    device = CV5000Device(port="COM4", debug=True)
     
     try:
         device.connect()

@@ -13,7 +13,7 @@ def simulate_examination():
     print("🏥 Complete Eye Examination Workflow")
     print("=" * 60)
     
-    with CV5000Device(port="COM7", debug=False) as device:
+    with CV5000Device(port="COM4", debug=False) as device:
         
         # Step 1: Initialize
         print("\n[Step 1] Initializing device...")

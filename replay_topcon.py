@@ -5,7 +5,7 @@ import binascii
 
 # ================= CONFIGURATION =================
 # 1. Your Serial Port Settings (Match what you saw in the Sniffer)
-SERIAL_PORT = 'COM7'  # Change to your actual port
+SERIAL_PORT = 'COM4'  # Change to your actual port
 BAUD_RATE = 9600      # Topcon standard is usually 9600
 TIMEOUT = 1           # Seconds to wait for a response
 

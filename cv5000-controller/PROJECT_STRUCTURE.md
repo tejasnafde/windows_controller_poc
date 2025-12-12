@@ -137,7 +137,7 @@ python examples/full_exam.py
 ### Pattern 1: Context Manager (Recommended)
 
 ```python
-with CV5000Device(port="COM7") as device:
+with CV5000Device(port="COM4") as device:
     device.set_prescription(r_sph=-1.50)
     # Automatic cleanup on exit
 ```
@@ -145,7 +145,7 @@ with CV5000Device(port="COM7") as device:
 ### Pattern 2: Manual Management
 
 ```python
-device = CV5000Device(port="COM7")
+device = CV5000Device(port="COM4")
 try:
     device.connect()
     device.set_prescription(r_sph=-1.50)
@@ -158,7 +158,7 @@ finally:
 ```python
 from src.protocol import CV5000Protocol
 
-protocol = CV5000Protocol(port="COM7")
+protocol = CV5000Protocol(port="COM4")
 protocol.connect()
 packet = protocol.build_packet("D", "63.5")
 protocol.send_packet(packet)

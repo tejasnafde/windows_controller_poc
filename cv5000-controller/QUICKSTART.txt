@@ -21,7 +21,7 @@
 ─────────────────────────────────────────────────────────────────
   from src.device import CV5000Device
 
-  with CV5000Device(port="COM7") as device:
+  with CV5000Device(port="COM4") as device:
       # Set prescription
       device.set_prescription(r_sph=-1.50, l_sph=-1.50)
       
@@ -34,14 +34,14 @@
 
 ⚙️ CHANGE PORT (Windows/Linux/Mac)
 ─────────────────────────────────────────────────────────────────
-  Windows:  CV5000Device(port="COM7")
+  Windows:  CV5000Device(port="COM4")
   Linux:    CV5000Device(port="/dev/ttyUSB0")
   macOS:    CV5000Device(port="/dev/tty.usbserial-xxx")
 
 
 🐛 DEBUG MODE
 ─────────────────────────────────────────────────────────────────
-  device = CV5000Device(port="COM7", debug=True)
+  device = CV5000Device(port="COM4", debug=True)
   # Shows all serial communication
 
 
