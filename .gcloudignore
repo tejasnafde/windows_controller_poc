@@ -1,0 +1,75 @@
+# This file specifies files that are *not* uploaded to Google Cloud
+# using gcloud. It follows the same syntax as .gitignore
+
+.gcloudignore
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+screenshots/
+screenshot_*
+*.log
+old_*
+tejas*
+config.json
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# Documentation
+*.md
+!README.md
+
+# Build files
+build_executable.py
+*.spec
+
+# Templates (keep these if needed on server)
+# templates/
+
+# Client files (not needed on server)
+windows_client_websocket.py
+controller_websocket.py
+action_executor.py
+instruction_schema.py
+brain_example.py
+example_websocket.py
+test_interface.html
