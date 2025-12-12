@@ -453,10 +453,151 @@ class WindowsClientWebSocket:
                 'message': f'Failed to take screenshot: {str(e)}'
             }
     
+    def _find_element_by_orb(self, template_name: str) -> Optional[Tuple[int, int]]:
+        """Find element using ORB feature matching.
+        
+        ORB (Oriented FAST and Rotated BRIEF) is robust to:
+        - Scale changes
+        - Rotation
+        - Low-resolution templates
+        - Brightness/contrast variations
+        
+        Args:
+            template_name: Name of template (e.g., 'chart_e200')
+        
+        Returns:
+            (x, y) coordinates of element center, or None if not found
+        """
+        if not OPENCV_AVAILABLE:
+            raise RuntimeError("OpenCV not installed. Run: pip install opencv-python-headless")
+        
+        # Load template from cache or file
+        if template_name not in self.templates_cache:
+            template_path = os.path.join(self.templates_dir, f"{template_name}.png")
+            if not os.path.exists(template_path):
+                raise FileNotFoundError(f"Template not found: {template_path}")
+            
+            template = cv2.imread(template_path, cv2.IMREAD_COLOR)
+            if template is None:
+                raise ValueError(f"Failed to load template: {template_path}")
+            
+            self.templates_cache[template_name] = template
+        
+        template = self.templates_cache[template_name]
+        
+        # Take screenshot
+        screenshot = pyautogui.screenshot()
+        screenshot_np = np.array(screenshot)
+        screenshot_bgr = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
+        
+        # Convert to grayscale for feature detection
+        template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+        screenshot_gray = cv2.cvtColor(screenshot_bgr, cv2.COLOR_BGR2GRAY)
+        
+        # Initialize ORB detector with increased features for better matching
+        # nfeatures: max number of features to detect (higher = more robust but slower)
+        # scaleFactor: pyramid decimation ratio (1.2 = 20% scale reduction per level)
+        # nlevels: number of pyramid levels (8 = good for scale invariance)
+        # edgeThreshold: size of border where features are not detected
+        # firstLevel: pyramid level to start from
+        # WTA_K: number of points to produce each element of BRIEF descriptor
+        # scoreType: HARRIS_SCORE or FAST_SCORE
+        # patchSize: size of patch used by oriented BRIEF descriptor
+        orb = cv2.ORB_create(
+            nfeatures=5000,      # Increased from default 500
+            scaleFactor=1.2,
+            nlevels=8,
+            edgeThreshold=15,    # Reduced to detect features closer to edges
+            firstLevel=0,
+            WTA_K=2,
+            scoreType=cv2.ORB_HARRIS_SCORE,
+            patchSize=31
+        )
+        
+        # Detect keypoints and compute descriptors
+        kp_template, des_template = orb.detectAndCompute(template_gray, None)
+        kp_screenshot, des_screenshot = orb.detectAndCompute(screenshot_gray, None)
+        
+        # Check if enough keypoints were found
+        if des_template is None or des_screenshot is None:
+            self.log(f"ORB: Not enough features found (template={len(kp_template) if kp_template else 0}, screen={len(kp_screenshot) if kp_screenshot else 0})", "WARNING")
+            return None
+        
+        if len(kp_template) < 10:
+            self.log(f"ORB: Template has too few keypoints ({len(kp_template)}), falling back to template matching", "WARNING")
+            return None
+        
+        # Create BFMatcher (Brute Force Matcher) with Hamming distance
+        # Hamming distance is used for binary descriptors like ORB
+        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
+        
+        # Match descriptors using KNN (k=2 for ratio test)
+        matches = bf.knnMatch(des_template, des_screenshot, k=2)
+        
+        # Apply Lowe's ratio test to filter good matches
+        # A match is good if the distance to the nearest neighbor is significantly
+        # smaller than the distance to the second-nearest neighbor
+        good_matches = []
+        for match_pair in matches:
+            if len(match_pair) == 2:
+                m, n = match_pair
+                # Ratio threshold: 0.75 is standard, lower = more strict
+                if m.distance < 0.75 * n.distance:
+                    good_matches.append(m)
+        
+        # Need at least 10 good matches for reliable detection
+        MIN_MATCH_COUNT = 10
+        if len(good_matches) < MIN_MATCH_COUNT:
+            self.log(f"ORB: Not enough good matches ({len(good_matches)}/{MIN_MATCH_COUNT})", "WARNING")
+            return None
+        
+        # Extract location of good matches
+        src_pts = np.float32([kp_template[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+        dst_pts = np.float32([kp_screenshot[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+        
+        # Find homography matrix using RANSAC
+        # Homography describes the transformation from template to screenshot
+        # RANSAC filters out outliers for robust estimation
+        M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+        
+        if M is None:
+            self.log("ORB: Failed to compute homography", "WARNING")
+            return None
+        
+        # Get template dimensions
+        h, w = template_gray.shape
+        
+        # Transform template corners to screenshot coordinates
+        pts = np.float32([[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]).reshape(-1, 1, 2)
+        dst = cv2.perspectiveTransform(pts, M)
+        
+        # Calculate center of transformed template
+        center_x = int(np.mean(dst[:, 0, 0]))
+        center_y = int(np.mean(dst[:, 0, 1]))
+        
+        # Verify the match is reasonable (within screen bounds)
+        screen_h, screen_w = screenshot_gray.shape
+        if not (0 <= center_x < screen_w and 0 <= center_y < screen_h):
+            self.log(f"ORB: Match outside screen bounds ({center_x}, {center_y})", "WARNING")
+            return None
+        
+        # Count inliers (matches that fit the homography)
+        inliers = np.sum(mask)
+        inlier_ratio = inliers / len(good_matches)
+        
+        # Require at least 60% inliers for reliable match
+        if inlier_ratio < 0.6:
+            self.log(f"ORB: Low inlier ratio ({inlier_ratio:.2%})", "WARNING")
+            return None
+        
+        self.log(f"ORB: Found match with {len(good_matches)} matches, {inliers} inliers ({inlier_ratio:.2%})", "SUCCESS")
+        return (center_x, center_y)
+    
     def _find_element_by_template(self, template_name: str) -> Optional[Tuple[int, int]]:
         """Find element on screen using template matching.
         
         Robust to low-resolution templates by using upscaling and edge detection.
+        This is a fallback method when ORB feature matching fails.
         
         Args:
             template_name: Name of template (e.g., 'chart_e200')
@@ -575,7 +716,8 @@ class WindowsClientWebSocket:
                     best_match = (thresh_max_loc, scaled_template.shape)
         
         # Lower threshold for low-res templates (0.5 instead of 0.6)
-        if best_score < 0.6:
+        if best_score < 0.5:
+            self.log(f"Template matching: Best score {best_score:.3f} below threshold", "WARNING")
             return None
         
         # Calculate center coordinates
@@ -583,7 +725,34 @@ class WindowsClientWebSocket:
         center_x = top_left[0] + w // 2
         center_y = top_left[1] + h // 2
         
+        self.log(f"Template matching: Found match with score {best_score:.3f}", "SUCCESS")
         return (center_x, center_y)
+    
+    def _find_element_hybrid(self, template_name: str) -> Optional[Tuple[int, int]]:
+        """Find element using hybrid approach: ORB first, template matching as fallback.
+        
+        This combines the best of both worlds:
+        - ORB for robust feature-based matching (handles scale, rotation, quality)
+        - Template matching for simple elements without distinctive features
+        
+        Args:
+            template_name: Name of template (e.g., 'chart_e200')
+        
+        Returns:
+            (x, y) coordinates of element center, or None if not found
+        """
+        # Try ORB first (more robust for complex elements)
+        self.log(f"Trying ORB feature matching for '{template_name}'...", "INFO")
+        coords = self._find_element_by_orb(template_name)
+        
+        if coords is not None:
+            return coords
+        
+        # Fall back to template matching
+        self.log(f"ORB failed, falling back to template matching for '{template_name}'...", "INFO")
+        coords = self._find_element_by_template(template_name)
+        
+        return coords
     
     def _click_element(self, command: Dict[str, Any]) -> Dict[str, Any]:
         """Click element by template name.
@@ -612,8 +781,8 @@ class WindowsClientWebSocket:
                 if screenshot_result['status'] == 'success':
                     before_screenshot = screenshot_result['data']['screenshot']
             
-            # Find element
-            coords = self._find_element_by_template(element)
+            # Find element using hybrid approach (ORB + template matching)
+            coords = self._find_element_hybrid(element)
             
             if coords is None:
                 return {

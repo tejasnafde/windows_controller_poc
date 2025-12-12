@@ -61,10 +61,9 @@ Thumbs.db
 
 # Project specific
 windows_client.log
-
-tejas*
 config.json
 
 old_*
 screenshots/
 screenshot_*
+tejas*
