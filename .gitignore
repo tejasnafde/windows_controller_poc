@@ -67,3 +67,7 @@ old_*
 screenshots/
 screenshot_*
 tejas*
+
+# Topcon replay (not for production)
+replay_topcon.py
+final_test.csv

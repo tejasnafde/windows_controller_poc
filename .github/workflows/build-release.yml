@@ -1,0 +1,120 @@
+name: Build and Release Windows Executable
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build:
+    runs-on: windows-latest  # Uses Windows Server (latest available, typically Windows Server 2022)
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for version calculation
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Calculate new version
+        id: version
+        shell: pwsh
+        run: |
+          # Read current version from build_executable.py
+          $content = Get-Content build_executable.py -Raw
+          if ($content -match 'VERSION = "(\d+)\.(\d+)\.(\d+)"') {
+            $major = [int]$matches[1]
+            $minor = [int]$matches[2]
+            $patch = [int]$matches[3]
+            
+            # Increment patch version
+            $patch++
+            
+            $newVersion = "$major.$minor.$patch"
+            echo "NEW_VERSION=$newVersion" >> $env:GITHUB_OUTPUT
+            echo "Current version incremented to: $newVersion"
+          } else {
+            echo "Could not parse version, using 0.0.1"
+            echo "NEW_VERSION=0.0.1" >> $env:GITHUB_OUTPUT
+          }
+      
+      - name: Update version in build_executable.py
+        shell: pwsh
+        run: |
+          $newVersion = "${{ steps.version.outputs.NEW_VERSION }}"
+          $content = Get-Content build_executable.py -Raw
+          $content = $content -replace 'VERSION = "\d+\.\d+\.\d+"', "VERSION = `"$newVersion`""
+          Set-Content -Path build_executable.py -Value $content
+          echo "Updated VERSION to $newVersion in build_executable.py"
+      
+      - name: Commit version bump
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add build_executable.py
+          git diff --staged --quiet || git commit -m "chore: bump version to ${{ steps.version.outputs.NEW_VERSION }} [skip ci]"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build executable
+        run: |
+          python build_executable.py
+      
+      - name: Rename executable with version
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.NEW_VERSION }}"
+          $oldName = "dist\MyOptum_Installer.exe"
+          $newName = "dist\MyOptum_Installer_v$version.exe"
+          
+          if (Test-Path $oldName) {
+            Rename-Item -Path $oldName -NewName "MyOptum_Installer_v$version.exe"
+            echo "Renamed to: $newName"
+          } else {
+            echo "Error: Executable not found at $oldName"
+            exit 1
+          }
+      
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.NEW_VERSION }}
+          release_name: MyOptum Installer v${{ steps.version.outputs.NEW_VERSION }}
+          body: |
+            ## MyOptum Installer v${{ steps.version.outputs.NEW_VERSION }}
+            
+            Automated build from commit ${{ github.sha }}
+            
+            ### Download
+            Download the executable below and run it on your Windows machine.
+            
+            ### Changes
+            - Auto-generated release from latest commit
+          draft: false
+          prerelease: false
+      
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/MyOptum_Installer_v${{ steps.version.outputs.NEW_VERSION }}.exe
+          asset_name: MyOptum_Installer_v${{ steps.version.outputs.NEW_VERSION }}.exe
+          asset_content_type: application/octet-stream
