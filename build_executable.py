@@ -11,7 +11,7 @@ import subprocess
 import shutil
 
 # Version - increment with each commit
-VERSION = "0.0.3"
+VERSION = "0.0.4"
 
 
 def build_myoptum_installer():
@@ -64,6 +64,7 @@ def build_myoptum_installer():
         '--icon', 'NONE',              # You can add an icon file here
         '--hidden-import', 'cv2',       # Include OpenCV
         '--hidden-import', 'numpy',     # Include NumPy
+        '--hidden-import', 'serial',    # Include PySerial for Topcon replay
         '--collect-all', 'cv2',         # Include all OpenCV files
         'windows_client_websocket.py'
     ]
@@ -79,6 +80,18 @@ def build_myoptum_installer():
     else:
         print("⚠️  Warning: templates/ directory not found")
         print("   Run generate_templates.py to create templates\n")
+    
+    # Add final_test.csv if it exists (for Topcon replay)
+    if os.path.exists('final_test.csv'):
+        cmd.insert(-1, '--add-data')
+        if sys.platform == 'win32':
+            cmd.insert(-1, 'final_test.csv;.')  # Windows format
+        else:
+            cmd.insert(-1, 'final_test.csv:.')  # Unix format
+        print("✓ final_test.csv will be bundled for Topcon replay\n")
+    else:
+        print("⚠️  Warning: final_test.csv not found")
+        print("   Topcon replay feature will not work without this file\n")
     
     print(f"Command: {' '.join(cmd)}\n")
     

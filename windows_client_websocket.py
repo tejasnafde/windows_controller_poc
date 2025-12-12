@@ -10,7 +10,7 @@ import asyncio
 import json
 import sys
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import scrolledtext, messagebox
 from datetime import datetime
 import pyautogui
 from typing import Dict, Any, Optional, Tuple
@@ -19,12 +19,21 @@ import socket
 import os
 import base64
 import io
+import threading
+import csv
+import time
 try:
     import cv2
     import numpy as np
     OPENCV_AVAILABLE = True
 except ImportError:
     OPENCV_AVAILABLE = False
+
+try:
+    import serial
+    SERIAL_AVAILABLE = True
+except ImportError:
+    SERIAL_AVAILABLE = False
 
 # Configuration
 DEFAULT_SERVER_URL = 'ws://34.63.226.183:8765' #gcp uri given by vinay
@@ -55,6 +64,11 @@ class WindowsClientWebSocket:
         
         self.templates_dir = os.path.join(base_path, "templates")
         self.templates_cache = {}  # Cache loaded templates
+        
+        # Topcon replay setup
+        self.replay_running = False
+        self.replay_thread = None
+        self.csv_file_path = os.path.join(base_path, "final_test.csv")
         
         # Create GUI
         self.root = tk.Tk()
@@ -180,6 +194,20 @@ class WindowsClientWebSocket:
             pady=8
         )
         self.clear_button.pack(side=tk.RIGHT, padx=5)
+        
+        self.replay_button = tk.Button(
+            button_frame,
+            text="🔄 Replay Topcon",
+            command=self.start_topcon_replay,
+            font=('Consolas', 10, 'bold'),
+            bg='#2196F3',
+            fg='white',
+            activebackground='#0b7dda',
+            relief=tk.FLAT,
+            padx=20,
+            pady=8
+        )
+        self.replay_button.pack(side=tk.LEFT, padx=5)
         
         # Handle window close
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -920,7 +948,127 @@ class WindowsClientWebSocket:
                 'message': f'Failed to click element: {str(e)}'
             }
 
-
+    
+    def clean_hex_string(self, hex_str: str) -> Optional[bytes]:
+        """
+        Converts a string like "02 43 53" or "0x02, 0x43" into raw bytes.
+        """
+        # Remove common separators and prefixes
+        clean = hex_str.replace(" ", "").replace("0x", "").replace(",", "").replace("\n", "")
+        try:
+            return bytes.fromhex(clean)
+        except ValueError:
+            return None
+    
+    def run_topcon_replay(self):
+        """Run the Topcon replay in a background thread."""
+        if not SERIAL_AVAILABLE:
+            self.root.after(0, lambda: self.log("Serial library not available. Install pyserial: pip install pyserial", "ERROR"))
+            self.root.after(0, lambda: messagebox.showerror("Error", "Serial library not installed.\n\nPlease install pyserial:\npip install pyserial"))
+            return
+        
+        # Configuration
+        SERIAL_PORT = 'COM7'  # Change to your actual port
+        BAUD_RATE = 9600
+        TIMEOUT = 1
+        DATA_COLUMN_INDEX = 2
+        DIRECTION_COLUMN_INDEX = 1
+        DIRECTION_FILTER = "Write"
+        
+        try:
+            # Check if CSV file exists
+            if not os.path.exists(self.csv_file_path):
+                self.root.after(0, lambda: self.log(f"CSV file not found: {self.csv_file_path}", "ERROR"))
+                self.root.after(0, lambda: messagebox.showerror("Error", f"CSV file not found:\n{self.csv_file_path}"))
+                return
+            
+            # Open Serial Connection
+            try:
+                ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=TIMEOUT)
+                self.root.after(0, lambda: self.log(f"✅ Connected to {SERIAL_PORT} at {BAUD_RATE} baud", "SUCCESS"))
+            except serial.SerialException as e:
+                self.root.after(0, lambda: self.log(f"❌ Could not open port {SERIAL_PORT}: {e}", "ERROR"))
+                self.root.after(0, lambda: messagebox.showerror("Serial Port Error", f"Could not open port {SERIAL_PORT}:\n{e}"))
+                return
+            
+            self.root.after(0, lambda: self.log(f"📂 Reading from {os.path.basename(self.csv_file_path)}...", "INFO"))
+            
+            with open(self.csv_file_path, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                
+                # Skip header if exists
+                next(reader, None)
+                
+                for row_num, row in enumerate(reader, start=1):
+                    if not self.replay_running:
+                        self.root.after(0, lambda: self.log("Replay stopped by user", "WARNING"))
+                        break
+                    
+                    if not row:
+                        continue  # Skip empty rows
+                    
+                    time.sleep(1)
+                    
+                    # Filter Check (Don't send what the machine sent back!)
+                    if DIRECTION_COLUMN_INDEX is not None:
+                        if len(row) > DIRECTION_COLUMN_INDEX:
+                            direction = row[DIRECTION_COLUMN_INDEX]
+                            if DIRECTION_FILTER.lower() not in direction.lower():
+                                self.root.after(0, lambda r=row_num, d=direction: self.log(f"⏭️  Skipping Row {r} (Direction: {d})", "INFO"))
+                                continue
+                    
+                    # Extract Data
+                    if len(row) > DATA_COLUMN_INDEX:
+                        raw_data = row[DATA_COLUMN_INDEX]
+                        packet = self.clean_hex_string(raw_data)
+                        
+                        if packet:
+                            hex_display = packet.hex().upper()
+                            self.root.after(0, lambda r=row_num, h=hex_display: self.log(f"🚀 [Row {r}] Sending: {h}", "INFO"))
+                            
+                            # SEND THE PACKET
+                            ser.write(packet)
+                            
+                            # Optional: Read response to clear buffer
+                            response = ser.read_all()
+                            if response:
+                                resp_hex = response.hex().upper()
+                                self.root.after(0, lambda h=resp_hex: self.log(f"    ⬅️  Device Ack: {h}", "SUCCESS"))
+                            
+                            # Small delay so we don't choke the hardware
+                            time.sleep(0.2)
+                        else:
+                            self.root.after(0, lambda r=row_num, d=raw_data: self.log(f"⚠️  [Row {r}] Could not parse hex: {d}", "WARNING"))
+                    else:
+                        self.root.after(0, lambda r=row_num: self.log(f"⚠️  [Row {r}] Column index out of range", "WARNING"))
+            
+            ser.close()
+            self.root.after(0, lambda: self.log("🏁 Replay finished", "SUCCESS"))
+            
+        except Exception as e:
+            self.root.after(0, lambda: self.log(f"Replay error: {e}", "ERROR"))
+            self.root.after(0, lambda: messagebox.showerror("Replay Error", f"An error occurred:\n{e}"))
+        finally:
+            self.replay_running = False
+            self.root.after(0, lambda: self.replay_button.configure(text="🔄 Replay Topcon", state='normal'))
+    
+    def start_topcon_replay(self):
+        """Start the Topcon replay in a background thread."""
+        if self.replay_running:
+            # Stop the replay
+            self.replay_running = False
+            self.replay_button.configure(text="🔄 Replay Topcon", state='disabled')
+            self.log("Stopping Topcon replay...", "WARNING")
+            return
+        
+        # Start the replay
+        self.replay_running = True
+        self.replay_button.configure(text="■ Stop Replay", bg='#f44336', activebackground='#da190b')
+        self.log("Starting Topcon replay...", "INFO")
+        
+        # Run in background thread
+        self.replay_thread = threading.Thread(target=self.run_topcon_replay, daemon=True)
+        self.replay_thread.start()
     
     def on_closing(self):
         """Handle window close event."""
