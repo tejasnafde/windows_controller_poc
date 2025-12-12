@@ -967,6 +967,7 @@ class WindowsClientWebSocket:
         screenshot_config = command.get('screenshot', {})
         match_index = command.get('index', 0)  # Default to first match
         button = command.get('button', 'left')  # Default to left click
+        offset = command.get('offset', {'x': 0, 'y': 0})  # Offset from matched position
         
         # Validate button
         if button not in ['left', 'right', 'middle']:
@@ -1031,8 +1032,32 @@ class WindowsClientWebSocket:
                     }
                 }
             
+            # Apply offset to coordinates
+            # Support both pixel offsets and percentage offsets
+            offset_x = offset.get('x', 0)
+            offset_y = offset.get('y', 0)
+            
+            # Check if offset is percentage-based (values between -1.0 and 1.0)
+            # Percentage offsets are relative to screen dimensions
+            if isinstance(offset_x, float) and -1.0 <= offset_x <= 1.0:
+                screen_size = pyautogui.size()
+                offset_x = int(offset_x * screen_size.width)
+                self.log(f"Converting percentage offset X ({offset.get('x', 0):.2%}) to pixels ({offset_x}px)", "INFO")
+            
+            if isinstance(offset_y, float) and -1.0 <= offset_y <= 1.0:
+                screen_size = pyautogui.size()
+                offset_y = int(offset_y * screen_size.height)
+                self.log(f"Converting percentage offset Y ({offset.get('y', 0):.2%}) to pixels ({offset_y}px)", "INFO")
+            
+            click_x = coords[0] + offset_x
+            click_y = coords[1] + offset_y
+            
+            # Log offset if non-zero
+            if offset_x != 0 or offset_y != 0:
+                self.log(f"Applying offset ({offset_x}, {offset_y}) to click position", "INFO")
+            
             # Click at coordinates with specified button
-            pyautogui.click(coords[0], coords[1], button=button)
+            pyautogui.click(click_x, click_y, button=button)
             
             # Take after screenshot if requested
             after_screenshot = None
@@ -1042,12 +1067,13 @@ class WindowsClientWebSocket:
                     after_screenshot = screenshot_result['data']['screenshot']
             
             button_text = f" ({button} click)" if button != 'left' else ""
+            offset_text = f" with offset ({offset['x']}, {offset['y']})" if (offset.get('x', 0) != 0 or offset.get('y', 0) != 0) else ""
             return {
                 'type': 'response',
                 'status': 'success',
-                'message': f'Clicked element: {element}{button_text}' + (f' (match #{match_index})' if match_index > 0 else ''),
+                'message': f'Clicked element: {element}{button_text}{offset_text}' + (f' (match #{match_index})' if match_index > 0 else ''),
                 'data': {
-                    'clicked_at': {'x': coords[0], 'y': coords[1]},
+                    'clicked_at': {'x': click_x, 'y': click_y},
                     'before_screenshot': before_screenshot,
                     'after_screenshot': after_screenshot
                 }

@@ -53,13 +53,16 @@ class Action:
     delay: float = 1.0  # Delay after action (seconds)
     index: int = 0  # Which match to click if multiple found (0-based, 0 = first/leftmost/topmost)
     button: str = 'left'  # Mouse button: 'left', 'right', or 'middle'
+    offset: tuple = (0, 0)  # Pixel offset from matched position (x, y). Negative values move left/up.
     
-    def __init__(self, element: str, screenshot: Union[bool, dict, ScreenshotConfig, None] = None, delay: float = 1.0, index: int = 0, button: str = 'left'):
+    def __init__(self, element: str, screenshot: Union[bool, dict, ScreenshotConfig, None] = None, 
+                 delay: float = 1.0, index: int = 0, button: str = 'left', offset: tuple = (0, 0)):
         self.element = element
         self.screenshot = screenshot if isinstance(screenshot, ScreenshotConfig) else ScreenshotConfig.from_value(screenshot)
         self.delay = delay
         self.index = index
         self.button = button
+        self.offset = offset
     
     def to_command(self) -> Dict[str, Any]:
         """Convert to command dictionary for sending to client."""
@@ -68,7 +71,8 @@ class Action:
             'element': self.element,
             'screenshot': self.screenshot.to_dict(),
             'index': self.index,
-            'button': self.button
+            'button': self.button,
+            'offset': {'x': self.offset[0], 'y': self.offset[1]}
         }
 
 

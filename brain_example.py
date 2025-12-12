@@ -198,29 +198,31 @@ async def main():
     # - index: which match to click if template appears multiple times (0-based, optional)
     actions = [
         # Row 1 - Chart 1 templates
-        Action("chart1_e200", screenshot=False, delay=1.0),
-        Action("chart1_e400", screenshot=False, delay=1.0),
-        Action("chart1_enh200", screenshot=False, delay=0.5),
-        Action("chart1_eweme20", screenshot=False, delay=0.5),
-        Action("chart1_hbv100", screenshot=False, delay=0.5),
-        Action("chart1_m800", screenshot=False, delay=0.3),
-        Action("chart1_mew100", screenshot=False, delay=0.3),
-        Action("chart1_tzvec20", screenshot=False, delay=0.3),
-        Action("chart1_vlnea70", screenshot=False, delay=0.3),
-        Action("chart1_w150", screenshot=False, delay=0.3),
-        Action("chart1_w400", screenshot=False, delay=0.3),
-        Action("chart1_wemew40", screenshot=False, delay=0.3),
-        Action("chart1_wemew70", screenshot=False, delay=1.0),
+        # Action("chart1_e200", screenshot=False, delay=1.0),
+        # Action("chart1_e400", screenshot=False, delay=1.0),
+        # Action("chart1_enh200", screenshot=False, delay=0.5),
+        # Action("chart1_eweme20", screenshot=False, delay=0.5),
+        # Action("chart1_hbv100", screenshot=False, delay=0.5),
+        # Action("chart1_m800", screenshot=False, delay=0.3),
+        # Action("chart1_mew100", screenshot=False, delay=0.3),
+        # Action("chart1_tzvec20", screenshot=False, delay=0.3),
+        # Action("chart1_vlnea70", screenshot=False, delay=0.3),
+        # Action("chart1_w150", screenshot=False, delay=0.3),
+        # Action("chart1_w400", screenshot=False, delay=0.3),
+        # Action("chart1_wemew40", screenshot=False, delay=0.3),
+        # Action("chart1_wemew70", screenshot=False, delay=1.0),
         
-        # Left/Right eye templates
-        Action("right_add", screenshot=True, delay=1.0),
-        Action("right_axial", screenshot=True, delay=1.0),
-        Action("right_spherical", screenshot=True, delay=1.0),
-        Action("right_cylindrical", screenshot=True, delay=1.0),
-        Action("left_add", screenshot=True, delay=1.0),
-        Action("left_axial", screenshot=True, delay=1.0),
-        Action("left_spherical", screenshot=True, delay=1.0),
-        Action("left_cylindrical", screenshot=True, delay=1.0),
+        # Left/Right eye templates with offset to click number fields
+        # Match the static label (e.g., "ADD") and click the number field to the left/right
+        # Negative X offset = click to the left, Positive X offset = click to the right
+        Action("right_add", screenshot=False, delay=1.0, offset=(-100, 0)),  # Click 100px left of "ADD" label
+        Action("right_axial", screenshot=False, delay=1.0, offset=(-100, 0)),
+        Action("right_spherical", screenshot=False, delay=1.0, offset=(-100, 0)),
+        Action("right_cylindrical", screenshot=False, delay=1.0, offset=(-100, 0)),
+        Action("left_add", screenshot=False, delay=1.0, offset=(100, 0)),  # Click 100px right of "ADD" label
+        Action("left_axial", screenshot=False, delay=1.0, offset=(100, 0)),
+        Action("left_spherical", screenshot=False, delay=1.0, offset=(100, 0)),
+        Action("left_cylindrical", screenshot=False, delay=1.0, offset=(100, 0)),
         
         # Navigation arrows - demonstrates using index for multiple matches
         # If navigate_chart_arrows has left/right arrows, use index to select which one
