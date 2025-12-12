@@ -45,7 +45,15 @@ class WindowsClientWebSocket:
         self.running = False
         
         # Template matching setup
-        self.templates_dir = "templates"
+        # When running as PyInstaller bundle, use _MEIPASS for bundled resources
+        if getattr(sys, 'frozen', False):
+            # Running as compiled executable
+            base_path = sys._MEIPASS
+        else:
+            # Running as normal Python script
+            base_path = os.path.dirname(os.path.abspath(__file__))
+        
+        self.templates_dir = os.path.join(base_path, "templates")
         self.templates_cache = {}  # Cache loaded templates
         
         # Create GUI
@@ -179,6 +187,7 @@ class WindowsClientWebSocket:
         # Initial log
         self.log("MyOptum Activity Monitor initialized", "INFO")
         self.log(f"Client ID: {self.client_id}", "INFO")
+        self.log(f"Templates directory: {self.templates_dir}", "INFO")
         self.log(f"Ready to connect to: {server_url}", "INFO")
     
     def log(self, message: str, level: str = "INFO"):
