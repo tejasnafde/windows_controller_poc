@@ -636,6 +636,81 @@
                 updateLastClicked(`Side Button ${index + 1}`);
             });
         });
+
+        // Add click feedback to data table cells
+        document.querySelectorAll('.data-table td').forEach(cell => {
+            cell.addEventListener('click', function () {
+                const header = this.parentElement.querySelector('th');
+                const headerText = header ? header.textContent : 'Data';
+                const value = this.textContent.trim();
+                updateLastClicked(`${headerText}: ${value}`);
+            });
+        });
+
+        // Add click feedback to dials
+        document.querySelectorAll('.dial').forEach((dial, index) => {
+            dial.addEventListener('click', function () {
+                updateLastClicked(`Dial ${index + 1}`);
+            });
+        });
+
+        // Add click feedback to power display
+        document.querySelectorAll('.power-display').forEach(display => {
+            display.addEventListener('click', function () {
+                updateLastClicked('PD Display');
+            });
+        });
+
+        // Add click feedback to indicator lights
+        document.querySelectorAll('.indicator').forEach((indicator, index) => {
+            indicator.addEventListener('click', function () {
+                const indicatorType = this.classList.contains('red') ? 'Red' : 'Green';
+                updateLastClicked(`${indicatorType} Indicator ${index + 1}`);
+            });
+        });
+
+        // Add click feedback to bar display
+        document.querySelectorAll('.bar-display').forEach(display => {
+            display.addEventListener('click', function () {
+                updateLastClicked('Bar Display');
+            });
+        });
+
+        // Add click feedback to bottom display
+        document.querySelectorAll('.bottom-display').forEach(display => {
+            display.addEventListener('click', function () {
+                updateLastClicked('Bottom Display');
+            });
+        });
+
+        // Add click feedback to window controls
+        document.querySelectorAll('.window-controls button').forEach((btn, index) => {
+            btn.addEventListener('click', function () {
+                const controlNames = ['Minimize', 'Maximize', 'Close'];
+                updateLastClicked(`Window Control: ${controlNames[index] || `Button ${index + 1}`}`);
+            });
+        });
+
+        // Add click feedback to header section
+        document.querySelectorAll('.header-section span').forEach((span, index) => {
+            span.addEventListener('click', function () {
+                updateLastClicked(`Header Section ${index + 1}: ${this.textContent.trim()}`);
+            });
+        });
+
+        // Add click feedback to instruction box
+        document.querySelectorAll('.instruction-box').forEach(box => {
+            box.addEventListener('click', function () {
+                updateLastClicked('Instruction Box');
+            });
+        });
+
+        // Add click feedback to right panel controls
+        document.querySelectorAll('.right-panel > div').forEach((panel, index) => {
+            panel.addEventListener('click', function () {
+                updateLastClicked(`Right Panel Section ${index + 1}`);
+            });
+        });
     </script>
 </body>
 
