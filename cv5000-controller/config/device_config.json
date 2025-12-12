@@ -1,0 +1,37 @@
+{
+  "device": {
+    "model": "Topcon CV-5000",
+    "manufacturer": "Topcon",
+    "type": "Phoropter"
+  },
+  "connection": {
+    "default_port": "COM7",
+    "baudrate": 9600,
+    "timeout": 1.0,
+    "retry_attempts": 3,
+    "retry_delay": 0.5
+  },
+  "timing": {
+    "command_delay_ms": 50,
+    "reset_delay_ms": 200,
+    "chart_change_delay_ms": 100
+  },
+  "defaults": {
+    "r_sph": 0.0,
+    "r_cyl": 0.0,
+    "r_axis": 0,
+    "l_sph": 0.0,
+    "l_cyl": 0.0,
+    "l_axis": 0,
+    "pd": 64.0,
+    "chart_line": 1,
+    "chart_mode": 1,
+    "display_mode": 0
+  },
+  "validation": {
+    "enable_range_checks": true,
+    "enable_step_checks": true,
+    "allow_partial_updates": true
+  }
+}
+
