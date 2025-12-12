@@ -27,7 +27,7 @@ except ImportError:
     OPENCV_AVAILABLE = False
 
 # Configuration
-DEFAULT_SERVER_URL = 'wss://29cb14c9edd5.ngrok-free.app'
+DEFAULT_SERVER_URL = 'ws://34.63.226.183:8765' #gcp uri given by vinay
 DEFAULT_CLIENT_ID = socket.gethostname()  # Use computer name as default ID
 
 # PyAutoGUI safety settings
