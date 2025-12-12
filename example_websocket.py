@@ -14,16 +14,17 @@ For each chart:
 import asyncio
 import base64
 from datetime import datetime
+import websockets
 from controller_websocket import ControllerWebSocket
 
 
 # Configuration
-SERVER_URL = 'wss://d315fa0e928740.lhr.life'
+SERVER_URL = 'wss://fd20726e613e0e.lhr.life'
 
 # Base position for first chart in row 1
 # Adjust these based on where Chart1 grid starts on your screen
-BASE_X = 150  # X coordinate of first chart
-BASE_Y = 450  # Y coordinate of first chart
+BASE_X = 475   # X coordinate of first chart (moved right)
+BASE_Y = 750   # Y coordinate of first chart (moved down significantly)
 
 # Chart grid layout
 CHART_WIDTH = 100  # Approximate width of each chart item
@@ -192,12 +193,27 @@ async def main():
         
         await controller.disconnect()
         
+    except websockets.exceptions.InvalidMessage as e:
+        print(f"\n✗ WebSocket Connection Error: {e}")
+        print("\nThis usually means:")
+        print("  1. The relay server is not running on GCP")
+        print("  2. The localhost.run tunnel has disconnected")
+        print("  3. The server URL is incorrect")
+        print("\nTo fix:")
+        print("  1. On GCP: Restart relay server")
+        print("     python3 relay_server.py --host 127.0.0.1 --port 8123")
+        print("  2. Restart localhost.run tunnel:")
+        print("     ssh -R 80:localhost:8123 localhost.run")
+        print("  3. Update SERVER_URL in this script with the new tunnel URL")
     except ConnectionError as e:
         print(f"\n✗ Connection Error: {e}")
         print("\nTroubleshooting:")
         print("  1. Make sure relay server is running")
         print("  2. Make sure Windows client is connected")
         print("  3. Check server URL is correct")
+    except TimeoutError as e:
+        print(f"\n✗ Timeout Error: {e}")
+        print("\nThe server is not responding")
     except Exception as e:
         print(f"\n✗ Unexpected Error: {e}")
         import traceback

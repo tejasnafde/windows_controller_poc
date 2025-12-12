@@ -13,9 +13,18 @@ import tkinter as tk
 from tkinter import scrolledtext
 from datetime import datetime
 import pyautogui
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Tuple
 import websockets
 import socket
+import os
+import base64
+import io
+try:
+    import cv2
+    import numpy as np
+    OPENCV_AVAILABLE = True
+except ImportError:
+    OPENCV_AVAILABLE = False
 
 # Configuration
 DEFAULT_SERVER_URL = 'ws://localhost:8765'
@@ -34,6 +43,10 @@ class WindowsClientWebSocket:
         self.client_id = client_id or DEFAULT_CLIENT_ID
         self.websocket = None
         self.running = False
+        
+        # Template matching setup
+        self.templates_dir = "templates"
+        self.templates_cache = {}  # Cache loaded templates
         
         # Create GUI
         self.root = tk.Tk()
@@ -319,6 +332,8 @@ class WindowsClientWebSocket:
                 return self._get_position()
             elif action == 'take_screenshot':
                 return self._take_screenshot()
+            elif action == 'click_element':
+                return self._click_element(command)
             else:
                 return {
                     'type': 'response',
@@ -431,6 +446,146 @@ class WindowsClientWebSocket:
                 'status': 'error',
                 'message': f'Failed to take screenshot: {str(e)}'
             }
+    
+    def _find_element_by_template(self, template_name: str) -> Optional[Tuple[int, int]]:
+        """Find element on screen using template matching.
+        
+        Args:
+            template_name: Name of template (e.g., 'chart_e200')
+        
+        Returns:
+            (x, y) coordinates of element center, or None if not found
+        """
+        if not OPENCV_AVAILABLE:
+            raise RuntimeError("OpenCV not installed. Run: pip install opencv-python-headless")
+        
+        # Load template from cache or file
+        if template_name not in self.templates_cache:
+            template_path = os.path.join(self.templates_dir, f"{template_name}.png")
+            if not os.path.exists(template_path):
+                raise FileNotFoundError(f"Template not found: {template_path}")
+            
+            template = cv2.imread(template_path, cv2.IMREAD_COLOR)
+            if template is None:
+                raise ValueError(f"Failed to load template: {template_path}")
+            
+            self.templates_cache[template_name] = template
+        
+        template = self.templates_cache[template_name]
+        
+        # Take screenshot
+        screenshot = pyautogui.screenshot()
+        screenshot_np = np.array(screenshot)
+        screenshot_bgr = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
+        
+        # Multi-scale template matching (to handle different DPI/zoom levels)
+        best_match = None
+        best_score = 0.0
+        
+        for scale in [0.8, 0.9, 1.0, 1.1, 1.2]:
+            # Resize template
+            scaled_template = cv2.resize(
+                template,
+                None,
+                fx=scale,
+                fy=scale,
+                interpolation=cv2.INTER_CUBIC
+            )
+            
+            # Skip if template is larger than screenshot
+            if (scaled_template.shape[0] > screenshot_bgr.shape[0] or 
+                scaled_template.shape[1] > screenshot_bgr.shape[1]):
+                continue
+            
+            # Perform template matching
+            result = cv2.matchTemplate(screenshot_bgr, scaled_template, cv2.TM_CCOEFF_NORMED)
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+            
+            # Update best match
+            if max_val > best_score:
+                best_score = max_val
+                best_match = (max_loc, scaled_template.shape)
+        
+        # Threshold for match confidence
+        if best_score < 0.7:
+            return None
+        
+        # Calculate center coordinates
+        top_left, (h, w, _) = best_match
+        center_x = top_left[0] + w // 2
+        center_y = top_left[1] + h // 2
+        
+        return (center_x, center_y)
+    
+    def _click_element(self, command: Dict[str, Any]) -> Dict[str, Any]:
+        """Click element by template name.
+        
+        Args:
+            command: {
+                'element': 'chart_e200',
+                'screenshot': {'before': True, 'after': False} or bool
+            }
+        """
+        element = command.get('element')
+        screenshot_config = command.get('screenshot', {})
+        
+        # Support both boolean (legacy) and object format
+        if isinstance(screenshot_config, bool):
+            screenshot_config = {
+                'before': screenshot_config,
+                'after': screenshot_config
+            }
+        
+        try:
+            # Take before screenshot if requested
+            before_screenshot = None
+            if screenshot_config.get('before', False):
+                screenshot_result = self._take_screenshot()
+                if screenshot_result['status'] == 'success':
+                    before_screenshot = screenshot_result['data']['screenshot']
+            
+            # Find element
+            coords = self._find_element_by_template(element)
+            
+            if coords is None:
+                return {
+                    'type': 'response',
+                    'status': 'error',
+                    'message': f'Element not found: {element}',
+                    'data': {
+                        'before_screenshot': before_screenshot,
+                        'after_screenshot': None
+                    }
+                }
+            
+            # Click at coordinates
+            pyautogui.click(coords[0], coords[1])
+            
+            # Take after screenshot if requested
+            after_screenshot = None
+            if screenshot_config.get('after', False):
+                screenshot_result = self._take_screenshot()
+                if screenshot_result['status'] == 'success':
+                    after_screenshot = screenshot_result['data']['screenshot']
+            
+            return {
+                'type': 'response',
+                'status': 'success',
+                'message': f'Clicked element: {element}',
+                'data': {
+                    'clicked_at': {'x': coords[0], 'y': coords[1]},
+                    'before_screenshot': before_screenshot,
+                    'after_screenshot': after_screenshot
+                }
+            }
+            
+        except Exception as e:
+            return {
+                'type': 'response',
+                'status': 'error',
+                'message': f'Failed to click element: {str(e)}'
+            }
+
 
     
     def on_closing(self):

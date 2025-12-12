@@ -59,8 +59,23 @@ def build_myoptum_installer():
         '--windowed',                   # GUI mode (no console window)
         '--name', 'MyOptum_Installer',  # Executable name
         '--icon', 'NONE',              # You can add an icon file here
+        '--hidden-import', 'cv2',       # Include OpenCV
+        '--hidden-import', 'numpy',     # Include NumPy
+        '--collect-all', 'cv2',         # Include all OpenCV files
         'windows_client_websocket.py'
     ]
+    
+    # Add templates directory if it exists
+    if os.path.exists('templates'):
+        cmd.insert(-1, '--add-data')
+        if sys.platform == 'win32':
+            cmd.insert(-1, 'templates;templates')  # Windows format
+        else:
+            cmd.insert(-1, 'templates:templates')  # Unix format
+        print("✓ Templates directory will be bundled\n")
+    else:
+        print("⚠️  Warning: templates/ directory not found")
+        print("   Run generate_templates.py to create templates\n")
     
     print(f"Command: {' '.join(cmd)}\n")
     

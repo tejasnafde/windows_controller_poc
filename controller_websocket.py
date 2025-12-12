@@ -36,7 +36,15 @@ class ControllerWebSocket:
         """Connect to relay server."""
         logger.info(f"Connecting to relay server at {self.server_url}")
         
-        self.websocket = await websockets.connect(self.server_url)
+        # Disable SSL verification for localhost.run tunnels
+        import ssl
+        ssl_context = None
+        if 'localhost.run' in self.server_url or 'lhr.life' in self.server_url:
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+        
+        self.websocket = await websockets.connect(self.server_url, ssl=ssl_context)
         
         # Register as controller
         await self.websocket.send(json.dumps({
