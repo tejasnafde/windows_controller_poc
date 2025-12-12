@@ -504,19 +504,11 @@ class WindowsClientWebSocket:
         screenshot_gray = cv2.cvtColor(screenshot_bgr, cv2.COLOR_BGR2GRAY)
         
         # Initialize ORB detector with increased features for better matching
-        # nfeatures: max number of features to detect (higher = more robust but slower)
-        # scaleFactor: pyramid decimation ratio (1.2 = 20% scale reduction per level)
-        # nlevels: number of pyramid levels (8 = good for scale invariance)
-        # edgeThreshold: size of border where features are not detected
-        # firstLevel: pyramid level to start from
-        # WTA_K: number of points to produce each element of BRIEF descriptor
-        # scoreType: HARRIS_SCORE or FAST_SCORE
-        # patchSize: size of patch used by oriented BRIEF descriptor
         orb = cv2.ORB_create(
-            nfeatures=5000,      # Increased from default 500
+            nfeatures=5000,
             scaleFactor=1.2,
             nlevels=8,
-            edgeThreshold=15,    # Reduced to detect features closer to edges
+            edgeThreshold=15,
             firstLevel=0,
             WTA_K=2,
             scoreType=cv2.ORB_HARRIS_SCORE,
@@ -536,21 +528,18 @@ class WindowsClientWebSocket:
             self.log(f"ORB: Template has too few keypoints ({len(kp_template)}), falling back to template matching", "WARNING")
             return None
         
-        # Create BFMatcher (Brute Force Matcher) with Hamming distance
-        # Hamming distance is used for binary descriptors like ORB
+        # Create BFMatcher with Hamming distance
         bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
         
         # Match descriptors using KNN (k=2 for ratio test)
         matches = bf.knnMatch(des_template, des_screenshot, k=2)
         
         # Apply Lowe's ratio test to filter good matches
-        # A match is good if the distance to the nearest neighbor is significantly
-        # smaller than the distance to the second-nearest neighbor
         good_matches = []
         for match_pair in matches:
             if len(match_pair) == 2:
                 m, n = match_pair
-                # Ratio threshold: 0.75 is standard, lower = more strict
+                # Ratio threshold: 0.75 is standard
                 if m.distance < 0.75 * n.distance:
                     good_matches.append(m)
         
@@ -560,13 +549,29 @@ class WindowsClientWebSocket:
             self.log(f"ORB: Not enough good matches ({len(good_matches)}/{MIN_MATCH_COUNT})", "WARNING")
             return None
         
-        # Extract location of good matches
-        src_pts = np.float32([kp_template[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-        dst_pts = np.float32([kp_screenshot[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+        # Sort by distance and use best matches
+        good_matches = sorted(good_matches, key=lambda x: x.distance)
+        
+        # Check if best match quality is reasonable
+        if good_matches[0].distance > 50:
+            self.log(f"ORB: Best match distance too high ({good_matches[0].distance})", "WARNING")
+            return None
+        
+        # Extract location of good matches (use top 20)
+        top_matches = good_matches[:min(20, len(good_matches))]
+        src_pts = np.float32([kp_template[m.queryIdx].pt for m in top_matches]).reshape(-1, 1, 2)
+        dst_pts = np.float32([kp_screenshot[m.trainIdx].pt for m in top_matches]).reshape(-1, 1, 2)
+        
+        # Check if matches are clustered (not scattered across screen)
+        screen_points = np.array([kp_screenshot[m.trainIdx].pt for m in top_matches])
+        std_x = np.std(screen_points[:, 0])
+        std_y = np.std(screen_points[:, 1])
+        
+        if std_x > 100 or std_y > 100:
+            self.log(f"ORB: Matches too scattered (std_x={std_x:.1f}, std_y={std_y:.1f})", "WARNING")
+            return None
         
         # Find homography matrix using RANSAC
-        # Homography describes the transformation from template to screenshot
-        # RANSAC filters out outliers for robust estimation
         M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
         
         if M is None:
@@ -724,8 +729,8 @@ class WindowsClientWebSocket:
                 else:
                     best_match = (thresh_max_loc, scaled_template.shape)
         
-        # Lower threshold for low-res templates (0.5 instead of 0.6)
-        if best_score < 0.5:
+        # Lower threshold for low-res templates (0.6 instead of 0.6)
+        if best_score < 0.6:
             self.log(f"Template matching: Best score {best_score:.3f} below threshold", "WARNING")
             return None
         
@@ -737,12 +742,13 @@ class WindowsClientWebSocket:
         self.log(f"Template matching: Found match with score {best_score:.3f}", "SUCCESS")
         return (center_x, center_y)
     
-    def _find_element_hybrid(self, template_name: str) -> Optional[Tuple[int, int]]:
-        """Find element using hybrid approach: ORB first, template matching as fallback.
+    def _find_element_by_edges(self, template_name: str) -> Optional[Tuple[int, int]]:
+        """Find element using edge-based matching (robust to lighting changes).
         
-        This combines the best of both worlds:
-        - ORB for robust feature-based matching (handles scale, rotation, quality)
-        - Template matching for simple elements without distinctive features
+        This method is very robust to:
+        - Brightness/contrast differences
+        - Color variations
+        - Slight quality differences
         
         Args:
             template_name: Name of template (e.g., 'chart_e200')
@@ -750,7 +756,82 @@ class WindowsClientWebSocket:
         Returns:
             (x, y) coordinates of element center, or None if not found
         """
-        # Try ORB first (more robust for complex elements)
+        if not OPENCV_AVAILABLE:
+            raise RuntimeError("OpenCV not installed. Run: pip install opencv-python-headless")
+        
+        # Load template from cache
+        if template_name not in self.templates_cache:
+            template_path = os.path.join(self.templates_dir, f"{template_name}.png")
+            if not os.path.exists(template_path):
+                raise FileNotFoundError(f"Template not found: {template_path}")
+            
+            template = cv2.imread(template_path, cv2.IMREAD_COLOR)
+            if template is None:
+                raise ValueError(f"Failed to load template: {template_path}")
+            
+            self.templates_cache[template_name] = template
+        
+        template = self.templates_cache[template_name]
+        
+        # Take screenshot
+        screenshot = pyautogui.screenshot()
+        screenshot_np = np.array(screenshot)
+        screenshot_bgr = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
+        
+        # Convert to grayscale
+        template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+        screenshot_gray = cv2.cvtColor(screenshot_bgr, cv2.COLOR_BGR2GRAY)
+        
+        # Apply edge detection
+        template_edges = cv2.Canny(template_gray, 50, 150)
+        screenshot_edges = cv2.Canny(screenshot_gray, 50, 150)
+        
+        # Dilate edges slightly to handle small shifts
+        kernel = np.ones((3, 3), np.uint8)
+        template_edges = cv2.dilate(template_edges, kernel, iterations=1)
+        screenshot_edges = cv2.dilate(screenshot_edges, kernel, iterations=1)
+        
+        best_match = None
+        best_score = 0.0
+        
+        # Try multiple scales
+        for scale in [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.5]:
+            scaled = cv2.resize(template_edges, None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
+            
+            if scaled.shape[0] > screenshot_edges.shape[0] or scaled.shape[1] > screenshot_edges.shape[1]:
+                continue
+            
+            result = cv2.matchTemplate(screenshot_edges, scaled, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, max_loc = cv2.minMaxLoc(result)
+            
+            if max_val > best_score:
+                best_score = max_val
+                h, w = scaled.shape[:2]
+                best_match = (max_loc[0] + w // 2, max_loc[1] + h // 2)
+        
+        # Lower threshold for edge matching (edges are less precise)
+        if best_score < 0.45:
+            self.log(f"Edge matching: Best score {best_score:.3f} below threshold", "WARNING")
+            return None
+        
+        self.log(f"Edge matching: Found match with score {best_score:.3f}", "SUCCESS")
+        return best_match
+    
+    def _find_element_hybrid(self, template_name: str) -> Optional[Tuple[int, int]]:
+        """Find element using hybrid approach: ORB → Template → Edges.
+        
+        This combines three complementary methods:
+        - ORB: Best for complex elements with distinctive features
+        - Template matching: Good for exact pixel matches
+        - Edge matching: Robust to lighting/color changes
+        
+        Args:
+            template_name: Name of template (e.g., 'chart_e200')
+        
+        Returns:
+            (x, y) coordinates of element center, or None if not found
+        """
+        # Try ORB first (most robust for complex elements)
         self.log(f"Trying ORB feature matching for '{template_name}'...", "INFO")
         coords = self._find_element_by_orb(template_name)
         
@@ -758,8 +839,15 @@ class WindowsClientWebSocket:
             return coords
         
         # Fall back to template matching
-        self.log(f"ORB failed, falling back to template matching for '{template_name}'...", "INFO")
+        self.log(f"ORB failed, trying template matching for '{template_name}'...", "INFO")
         coords = self._find_element_by_template(template_name)
+        
+        if coords is not None:
+            return coords
+        
+        # Final fallback: edge-based matching
+        self.log(f"Template matching failed, trying edge matching for '{template_name}'...", "INFO")
+        coords = self._find_element_by_edges(template_name)
         
         return coords
     
