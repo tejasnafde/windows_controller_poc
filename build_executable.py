@@ -24,20 +24,20 @@ def build_myoptum_installer():
     # Check if PyInstaller is installed
     try:
         import PyInstaller
-        print(f"\n✓ PyInstaller version: {PyInstaller.__version__}")
+        print(f"\n[OK] PyInstaller version: {PyInstaller.__version__}")
     except ImportError:
-        print("\n✗ PyInstaller not found!")
+        print("\n[ERROR] PyInstaller not found!")
         print("Installing PyInstaller...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pyinstaller"])
-        print("✓ PyInstaller installed")
+        print("[OK] PyInstaller installed")
     
     # Check if source file exists
     if not os.path.exists('windows_client_websocket.py'):
-        print("\n✗ Error: windows_client_websocket.py not found!")
+        print("\n[ERROR] windows_client_websocket.py not found!")
         print("Make sure you're running this script from the project directory.")
         return False
     
-    print("\n✓ Source file found: windows_client_websocket.py")
+    print("\n[OK] Source file found: windows_client_websocket.py")
     
     # Clean previous builds
     print("\nCleaning previous builds...")
@@ -75,9 +75,9 @@ def build_myoptum_installer():
             cmd.insert(-1, 'templates;templates')  # Windows format
         else:
             cmd.insert(-1, 'templates:templates')  # Unix format
-        print("✓ Templates directory will be bundled\n")
+        print("[OK] Templates directory will be bundled\n")
     else:
-        print("⚠️  Warning: templates/ directory not found")
+        print("[WARNING] templates/ directory not found")
         print("   Run generate_templates.py to create templates\n")
 
     
@@ -102,8 +102,8 @@ def build_myoptum_installer():
         
         if os.path.exists(exe_path):
             size_mb = os.path.getsize(exe_path) / (1024 * 1024)
-            print(f"\n✓ MyOptum Installer v{VERSION} created: {exe_path}")
-            print(f"✓ File size: {size_mb:.2f} MB")
+            print(f"\n[OK] MyOptum Installer v{VERSION} created: {exe_path}")
+            print(f"[OK] File size: {size_mb:.2f} MB")
             
             if system == 'Windows':
                 print("\nNext steps:")
@@ -112,7 +112,7 @@ def build_myoptum_installer():
                 print("  3. Click 'Connect to Server'")
                 print("  4. The Activity Monitor will show all remote commands")
             else:
-                print(f"\n⚠️  Note: You built on {system}, not Windows!")
+                print(f"\n[WARNING] Note: You built on {system}, not Windows!")
                 print("   This executable will only work on macOS/Linux.")
                 print("\nTo create a Windows .exe:")
                 print("  1. Run this build script on a Windows machine")
@@ -123,16 +123,16 @@ def build_myoptum_installer():
             
             return True
         else:
-            print("\n✗ Error: Executable not found in dist/")
+            print("\n[ERROR] Executable not found in dist/")
             print(f"   Expected: {exe_path}")
             return False
             
     except subprocess.CalledProcessError as e:
-        print("\n✗ Build failed!")
+        print("\n[ERROR] Build failed!")
         print(f"Error: {e}")
         return False
     except Exception as e:
-        print(f"\n✗ Unexpected error: {e}")
+        print(f"\n[ERROR] Unexpected error: {e}")
         return False
 
 

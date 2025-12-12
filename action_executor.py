@@ -95,11 +95,11 @@ class ActionExecutor:
                 # Create a failed ActionResult for this action
                 error_result = ActionResult(
                     success=False,
-                    element=action.element,
-                    error=str(e),
+                    action=action,  # Pass the Action object, not just element string
                     clicked_at=None,
                     before_screenshot=None,
                     after_screenshot=None,
+                    error=str(e),
                     execution_time=0.0
                 )
                 results.append(error_result)
