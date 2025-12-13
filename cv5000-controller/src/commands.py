@@ -123,4 +123,34 @@ class CommandBuilder:
         if query_type not in ["PS", "CV"]:
             raise ValidationError(f"Invalid version query type: {query_type}")
         return ("v", query_type)
+    
+    @staticmethod
+    def build_chart_switch_command(chart_num: int) -> Tuple:
+        """Build simple chart switch command (c 1, c 2, etc.)"""
+        if not 1 <= chart_num <= 9:
+            raise ValidationError(f"Chart number {chart_num} out of range (1-9)")
+        return ("c", str(chart_num))
+    
+    @staticmethod
+    def build_chart_pattern_command(pattern_id: int) -> Tuple:
+        """Build complex chart pattern command (CE 12, CE 47, etc.)"""
+        if not 1 <= pattern_id <= 99:
+            raise ValidationError(f"Chart pattern {pattern_id} out of range (1-99)")
+        return ("CE", str(pattern_id), "00")
+    
+    @staticmethod
+    def build_axis_mode_command(eye: str, value: int, mode: int) -> Tuple:
+        """Build axis mode command (c R A 25 2 or c L A 25 1)"""
+        if eye.upper() not in ['R', 'L']:
+            raise ValidationError(f"Eye must be 'R' or 'L', got {eye}")
+        if not 0 <= value <= 180:
+            raise ValidationError(f"Axis value {value} out of range (0-180)")
+        if not 1 <= mode <= 9:
+            raise ValidationError(f"Mode {mode} out of range (1-9)")
+        return ("c", eye.upper(), "A", str(value), str(mode))
+    
+    @staticmethod
+    def build_init_command() -> Tuple:
+        """Build initialization command (sent at startup)"""
+        return ("r",)
 

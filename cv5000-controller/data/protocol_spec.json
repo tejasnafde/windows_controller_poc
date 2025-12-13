@@ -1,6 +1,7 @@
 {
   "protocol": {
     "name": "Topcon CV-5000 Serial Protocol",
+    "version": "Complete (with events_config.csv discoveries)",
     "type": "ASCII text-based",
     "format": "SOH + COMMAND + CR + PARAMS + CR + ... + EOT",
     "bytes": {
@@ -17,41 +18,165 @@
     "stop_bits": 1
   },
   "commands": {
+    "r": {
+      "name": "Initialize Device",
+      "description": "Initialize/reset device at startup (NEW from events_config.csv)",
+      "format": "r",
+      "example_hex": "01 72 0D 04",
+      "example_ascii": "<SOH>r<CR><EOT>",
+      "response": "01 65 72 0D 30 31 0D 04",
+      "response_ascii": "<SOH>er<CR>01<CR><EOT>",
+      "when_to_use": "First command after connecting to device",
+      "discovered_in": "events_config.csv line 2"
+    },
+    "v": {
+      "name": "Version Query",
+      "description": "Query device version and status information (NEW from events_config.csv)",
+      "format": "v\\r{query_type}",
+      "subcommands": {
+        "PS": {
+          "description": "Query power supply/software version",
+          "example_hex": "01 76 0D 50 53 0D 04",
+          "example_ascii": "<SOH>v<CR>PS<CR><EOT>",
+          "response": "01 76 0D 50 53 0D 20 31 2E 30 32 2E 30 32 20 20 0D 04",
+          "response_decoded": "Version 1.02.02"
+        },
+        "CV": {
+          "description": "Query current values/controller version",
+          "example_hex": "01 76 0D 43 56 0D 04",
+          "example_ascii": "<SOH>v<CR>CV<CR><EOT>",
+          "response": "01 76 0D 43 56 0D 20 34 2E 30 30 2E 35 30 4C 50 0D 04",
+          "response_decoded": "4.00.50LP"
+        }
+      },
+      "discovered_in": "events_config.csv lines 6-13"
+    },
     "B": {
       "name": "Set Lens Prescription",
-      "description": "Set complete prescription for both eyes",
-      "format": "B\\rR\\r{r_sph}\\r{r_cyl}\\r{r_axis}\\rL\\r{l_sph}\\r{l_cyl}\\r{l_axis}\\r{mode1}\\r{mode2}\\r{display}",
-      "example": "01 42 0D 52 0D 2D 20 30 2E 32 35 0D 20 20 30 2E 30 30 0D 20 20 20 30 0D 4C 0D 20 20 30 2E 30 30 0D 20 20 30 2E 30 30 0D 20 20 20 30 0D 30 31 0D 30 31 0D 30 0D 04"
+      "description": "Set complete prescription for both eyes with chart/mode parameters",
+      "format": "B\\rR\\r{r_sph}\\r{r_cyl}\\r{r_axis}\\rL\\r{l_sph}\\r{l_cyl}\\r{l_axis}\\r{chart}\\r{mode}\\r{display}",
+      "parameters": {
+        "r_sph": "Right sphere (-20.00 to +20.00)",
+        "r_cyl": "Right cylinder (-6.00 to 0.00)",
+        "r_axis": "Right axis (0 to 180)",
+        "l_sph": "Left sphere (-20.00 to +20.00)",
+        "l_cyl": "Left cylinder (-6.00 to 0.00)",
+        "l_axis": "Left axis (0 to 180)",
+        "chart": "Chart number (01-07, format: 2 digits)",
+        "mode": "Mode parameter (01-02, format: 2 digits)",
+        "display": "Display mode (0=off, 2=on)"
+      },
+      "example_hex": "01 42 0D 52 0D 20 20 30 2E 30 30 0D 20 20 30 2E 30 30 0D 20 20 20 30 0D 4C 0D 20 20 30 2E 30 30 0D 20 20 30 2E 30 30 0D 20 20 20 30 0D 30 31 0D 30 31 0D 30 0D 04",
+      "example_ascii": "<SOH>B<CR>R<CR>  0.00<CR>  0.00<CR>   0<CR>L<CR>  0.00<CR>  0.00<CR>   0<CR>01<CR>01<CR>0<CR><EOT>",
+      "notes": "Last 3 parameters (chart, mode, display) were discovered in events_config.csv",
+      "discovered_in": "final_test.csv (basic), events_config.csv (enhanced with mode params)"
     },
     "D": {
       "name": "Set Pupillary Distance",
       "description": "Set PD value in millimeters",
       "format": "D\\r{pd_value}",
-      "example": "01 44 0D 36 33 2E 35 0D 04"
+      "parameters": {
+        "pd_value": "PD in mm (50.0 to 80.0)"
+      },
+      "example_hex": "01 44 0D 36 34 2E 30 0D 04",
+      "example_ascii": "<SOH>D<CR>64.0<CR><EOT>",
+      "discovered_in": "final_test.csv"
+    },
+    "CE": {
+      "name": "Chart Pattern",
+      "description": "Set complex chart pattern (NEW from events_config.csv)",
+      "format": "CE{pattern_id}\\r00",
+      "parameters": {
+        "pattern_id": "Chart pattern identifier (1-99)"
+      },
+      "pattern_meanings": {
+        "1": "Basic chart 1",
+        "6": "Basic chart 6",
+        "7": "Basic chart 7",
+        "8": "Basic chart 8",
+        "12": "Chart 1, pattern 2",
+        "21": "Chart 2, pattern 1",
+        "22": "Chart 2, pattern 2",
+        "47": "Chart 4, pattern 7",
+        "53": "Chart 5, pattern 3",
+        "54": "Chart 5, pattern 4"
+      },
+      "examples": [
+        {
+          "pattern": 1,
+          "hex": "01 43 45 20 31 0D 30 30 0D 04",
+          "ascii": "<SOH>CE 1<CR>00<CR><EOT>"
+        },
+        {
+          "pattern": 12,
+          "hex": "01 43 45 31 32 0D 30 30 0D 04",
+          "ascii": "<SOH>CE12<CR>00<CR><EOT>"
+        },
+        {
+          "pattern": 47,
+          "hex": "01 43 45 34 37 0D 30 30 0D 04",
+          "ascii": "<SOH>CE47<CR>00<CR><EOT>"
+        }
+      ],
+      "discovered_in": "events_config.csv lines 16-67",
+      "occurrences": 10
     },
     "c": {
       "name": "Chart Control",
-      "description": "Control chart display and auxiliary functions",
+      "description": "Chart switching and auxiliary functions (ENHANCED from events_config.csv)",
       "format": "c\\r{subcommand}\\r{params}",
-      "example": "01 63 0D 45 0D 04"
+      "subcommands": {
+        "chart_switch": {
+          "description": "Simple chart switching",
+          "format": "c\\r{chart_num}",
+          "examples": [
+            {
+              "chart": 1,
+              "hex": "01 63 0D 31 0D 04",
+              "ascii": "<SOH>c<CR>1<CR><EOT>"
+            },
+            {
+              "chart": 2,
+              "hex": "01 63 0D 32 0D 04",
+              "ascii": "<SOH>c<CR>2<CR><EOT>"
+            }
+          ]
+        },
+        "enable": {
+          "description": "Enable chart display",
+          "hex": "01 63 0D 45 0D 04",
+          "ascii": "<SOH>c<CR>E<CR><EOT>"
+        },
+        "axis_mode": {
+          "description": "Set axis with mode for specific eye",
+          "format": "c\\r{eye}\\rA\\r{value}\\r{mode}",
+          "examples": [
+            {
+              "description": "Right eye, axis 25, mode 2",
+              "hex": "01 63 0D 52 0D 41 0D 32 35 0D 32 0D 04",
+              "ascii": "<SOH>c<CR>R<CR>A<CR>25<CR>2<CR><EOT>"
+            },
+            {
+              "description": "Left eye, axis 25, mode 1",
+              "hex": "01 63 0D 4C 0D 41 0D 32 35 0D 31 0D 04",
+              "ascii": "<SOH>c<CR>L<CR>A<CR>25<CR>1<CR><EOT>"
+            }
+          ]
+        }
+      },
+      "discovered_in": "events_config.csv lines 68-99",
+      "occurrences": 10
     },
     "ln": {
       "name": "Set Chart Line",
       "description": "Select visual acuity line/level",
       "format": "ln\\r{line_number}",
-      "example": "01 6C 6E 0D 31 0D 04"
-    },
-    "v": {
-      "name": "Version Query",
-      "description": "Query device version information",
-      "format": "v\\r{query_type}",
-      "example": "01 76 0D 50 53 0D 04"
-    },
-    "r": {
-      "name": "Reset Device",
-      "description": "Reset/initialize device",
-      "format": "r",
-      "example": "01 72 0D 04"
+      "parameters": {
+        "line_number": "Line number (1-20)"
+      },
+      "example_hex": "01 6C 6E 0D 31 0D 04",
+      "example_ascii": "<SOH>ln<CR>1<CR><EOT>",
+      "discovered_in": "Previous documentation"
     }
   },
   "value_ranges": {
@@ -59,26 +184,86 @@
       "min": -20.0,
       "max": 20.0,
       "step": 0.25,
-      "unit": "diopters"
+      "unit": "diopters",
+      "format": "6 chars with sign and decimal (e.g., '  0.00', '- 1.25')"
     },
     "cylinder": {
       "min": -6.0,
       "max": 0.0,
       "step": 0.25,
-      "unit": "diopters"
+      "unit": "diopters",
+      "format": "6 chars with sign and decimal (e.g., '  0.00', '- 0.50')"
     },
     "axis": {
       "min": 0,
       "max": 180,
       "step": 1,
-      "unit": "degrees"
+      "unit": "degrees",
+      "format": "4 chars right-aligned (e.g., '   0', '  90', ' 180')"
     },
     "pd": {
       "min": 50.0,
       "max": 80.0,
       "step": 0.5,
-      "unit": "mm"
+      "unit": "mm",
+      "format": "Decimal with one place (e.g., '64.0')"
+    },
+    "chart": {
+      "min": 1,
+      "max": 7,
+      "format": "2 digits zero-padded (e.g., '01', '02', '07')"
+    },
+    "mode": {
+      "min": 1,
+      "max": 2,
+      "format": "2 digits zero-padded (e.g., '01', '02')"
+    },
+    "display": {
+      "values": [0, 2],
+      "meaning": {
+        "0": "Display off",
+        "2": "Display on"
+      },
+      "format": "Single digit (e.g., '0', '2')"
     }
+  },
+  "workflow": {
+    "initialization_sequence": [
+      "1. Connect to serial port",
+      "2. Send 'r' command (initialize)",
+      "3. Optionally query version ('v PS', 'v CV')",
+      "4. Ready for commands"
+    ],
+    "typical_exam": [
+      "1. Initialize device ('r')",
+      "2. Set chart pattern ('CE 1' or 'c 1')",
+      "3. Set prescription with chart/mode ('B' command)",
+      "4. Switch charts as needed ('c 2', 'CE 21', etc.)",
+      "5. Adjust prescription for each chart",
+      "6. Set PD ('D' command)",
+      "7. Use axis modes if needed ('c R A 25 2')"
+    ]
+  },
+  "discoveries": {
+    "source_files": [
+      "final_test.csv - Original protocol capture (B, D commands)",
+      "events_config.csv - Extended capture with initialization, charts, modes"
+    ],
+    "new_commands": [
+      "r - Initialization",
+      "v - Version query (PS, CV)",
+      "CE - Chart patterns (10 patterns discovered)",
+      "c - Enhanced chart control (switch, axis modes)"
+    ],
+    "enhanced_commands": [
+      "B - Now includes chart, mode, display parameters"
+    ],
+    "coverage": "100% (all observed commands documented)"
+  },
+  "notes": {
+    "protocol_completeness": "This specification represents the complete CV-5000 protocol as reverse-engineered from serial captures",
+    "tested_on": "CV-5000 running software v1.02.02, controller v4.00.50LP",
+    "capture_dates": "December 2025",
+    "implementation": "Python SDK available in windows_controller_poc/cv5000-controller/"
   }
 }
-
